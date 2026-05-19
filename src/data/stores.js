@@ -1,0 +1,32 @@
+export const STORES = [
+  { id: 'walmart',    name: 'Walmart',             location: 'Chino',       color: '#0071CE' },
+  { id: 'stater',     name: 'Stater Bros',          location: 'Chino Hills', color: '#E31837' },
+  { id: 'food4less',  name: 'Food 4 Less',          location: 'Ontario',     color: '#CC0000' },
+  { id: 'aldi',       name: 'Aldi',                 location: 'Chino Hills', color: '#00539F' },
+  { id: 'cardenas',   name: 'Cardenas Market',      location: 'Ontario',     color: '#006400' },
+  { id: 'northgate',  name: 'Northgate González',   location: 'Ontario',     color: '#FF6B00' },
+  { id: 'sprouts',    name: 'Sprouts',              location: 'Chino Hills', color: '#5B9927' },
+]
+
+export const ITEMS = [
+  { id: 'bread',       name: 'Bread (loaf)',          category: 'Bakery',     prices: { walmart: 1.28, stater: 2.49, food4less: 1.79, aldi: 1.49, cardenas: 1.99, northgate: 2.19, sprouts: 3.49 } },
+  { id: 'tortillas',   name: 'Tortillas (30ct)',       category: 'Bakery',     prices: { walmart: 3.48, stater: 4.29, food4less: 3.69, aldi: 3.49, cardenas: 2.99, northgate: 2.79, sprouts: 5.99 } },
+  { id: 'milk',        name: 'Milk (gallon)',          category: 'Dairy',      prices: { walmart: 3.48, stater: 4.29, food4less: 3.69, aldi: 3.29, cardenas: 3.89, northgate: 3.99, sprouts: 4.99 } },
+  { id: 'eggs',        name: 'Eggs (dozen)',           category: 'Dairy',      prices: { walmart: 3.78, stater: 4.99, food4less: 3.99, aldi: 3.49, cardenas: 4.29, northgate: 4.49, sprouts: 5.99 } },
+  { id: 'butter',      name: 'Butter (1 lb)',          category: 'Dairy',      prices: { walmart: 3.48, stater: 4.49, food4less: 3.79, aldi: 3.29, cardenas: 3.99, northgate: 4.19, sprouts: 5.99 } },
+  { id: 'cheese',      name: 'Sliced Cheese (16oz)',   category: 'Dairy',      prices: { walmart: 3.98, stater: 4.99, food4less: 3.99, aldi: 3.49, cardenas: 4.29, northgate: 4.49, sprouts: 5.49 } },
+  { id: 'yogurt',      name: 'Yogurt (32oz)',          category: 'Dairy',      prices: { walmart: 3.48, stater: 4.29, food4less: 3.79, aldi: 3.19, northgate: 3.99, sprouts: 4.99 } },
+  { id: 'chicken',     name: 'Chicken Breast (lb)',    category: 'Meat',       prices: { walmart: 2.97, stater: 3.99, food4less: 2.99, aldi: 3.49, cardenas: 2.79, northgate: 2.69, sprouts: 4.99 } },
+  { id: 'ground_beef', name: 'Ground Beef (lb)',       category: 'Meat',       prices: { walmart: 4.98, stater: 6.49, food4less: 5.29, cardenas: 4.79, northgate: 4.69, sprouts: 7.99 } },
+  { id: 'bananas',     name: 'Bananas (lb)',           category: 'Produce',    prices: { walmart: 0.58, stater: 0.79, food4less: 0.59, aldi: 0.49, cardenas: 0.55, northgate: 0.49, sprouts: 0.89 } },
+  { id: 'apples',      name: 'Apples (lb)',            category: 'Produce',    prices: { walmart: 1.28, stater: 1.99, food4less: 1.49, aldi: 1.29, cardenas: 1.19, northgate: 1.09, sprouts: 1.99 } },
+  { id: 'lettuce',     name: 'Romaine Lettuce',        category: 'Produce',    prices: { walmart: 1.28, stater: 1.79, food4less: 1.29, aldi: 1.09, cardenas: 1.19, northgate: 1.09, sprouts: 2.49 } },
+  { id: 'rice',        name: 'Rice (5 lb)',            category: 'Grains',     prices: { walmart: 4.48, stater: 5.99, food4less: 4.29, aldi: 4.19, cardenas: 3.99, northgate: 3.89, sprouts: 6.49 } },
+  { id: 'pasta',       name: 'Pasta (16oz)',           category: 'Grains',     prices: { walmart: 1.28, stater: 1.99, food4less: 1.49, aldi: 1.19, cardenas: 1.69, northgate: 1.79, sprouts: 2.49 } },
+  { id: 'beans',       name: 'Black Beans (15oz)',     category: 'Canned',     prices: { walmart: 0.88, stater: 1.29, food4less: 0.99, aldi: 0.89, cardenas: 0.79, northgate: 0.75, sprouts: 1.79 } },
+  { id: 'tomato_sauce',name: 'Tomato Sauce (24oz)',    category: 'Canned',     prices: { walmart: 1.48, stater: 2.19, food4less: 1.69, aldi: 1.39, cardenas: 1.59, northgate: 1.49, sprouts: 2.99 } },
+  { id: 'mayo',        name: 'Mayo (30oz)',            category: 'Condiments', prices: { walmart: 4.98, stater: 6.49, food4less: 5.29, aldi: 4.79, cardenas: 5.79, northgate: 5.99, sprouts: 7.49 } },
+  { id: 'oj',          name: 'Orange Juice (52oz)',    category: 'Beverages',  prices: { walmart: 3.98, stater: 4.99, food4less: 3.99, aldi: 3.79, cardenas: 4.19, northgate: 4.29, sprouts: 5.49 } },
+  { id: 'coke_zero',   name: 'Coke Zero 12-pack',     category: 'Beverages',  prices: { walmart: 7.98, stater: 8.99, food4less: 7.49, cardenas: 8.49, northgate: 8.99 } },
+  { id: 'cereal',      name: 'Cereal (18oz)',          category: 'Breakfast',  prices: { walmart: 3.98, stater: 4.99, food4less: 4.29, aldi: 3.79, sprouts: 5.49 } },
+]
