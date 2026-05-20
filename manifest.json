@@ -4,7 +4,7 @@
   "description": "IE's smartest grocery optimizer",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#4A7C59",
+  "background_color": "#ffffff",
   "theme_color": "#4A7C59",
   "orientation": "portrait",
   "icons": [
