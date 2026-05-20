@@ -17,7 +17,7 @@ export default function ScanView({ onBack }) {
   const videoRef = useRef(null)
   const controlsRef = useRef(null)
   const [scanKey, setScanKey] = useState(0)
-  const [phase, setPhase] = useState('scanning') // scanning | found | saved | error
+  const [phase, setPhase] = useState('scanning')
   const [barcode, setBarcode] = useState('')
   const [productName, setProductName] = useState('')
   const [lookingUp, setLookingUp] = useState(false)
@@ -27,38 +27,42 @@ export default function ScanView({ onBack }) {
 
   useEffect(() => {
     let cancelled = false
-    const hints = new Map()
-    hints.set(DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.UPC_A, BarcodeFormat.EAN_13])
-    const reader = new BrowserMultiFormatReader(hints)
 
-    reader
-      .decodeFromConstraints(
-        { video: { facingMode: 'environment' } },
-        videoRef.current,
-        (result, _err, controls) => {
-          if (cancelled || !result) return
-          cancelled = true
-          controls.stop()
-          controlsRef.current = null
-          const code = result.getText()
-          setBarcode(code)
-          setPhase('found')
-          lookUpProduct(code)
-        }
-      )
-      .then(controls => {
-        if (cancelled) controls.stop()
-        else controlsRef.current = controls
-      })
-      .catch(err => {
-        if (!cancelled) {
-          setPhase('error')
-          setErrorMsg(err?.message || 'Camera access denied')
-        }
-      })
+    const timer = setTimeout(() => {
+      const hints = new Map()
+      hints.set(DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.UPC_A, BarcodeFormat.EAN_13])
+      const reader = new BrowserMultiFormatReader(hints)
+
+      reader
+        .decodeFromConstraints(
+          { video: { facingMode: 'environment' } },
+          videoRef.current,
+          (result, _err, controls) => {
+            if (cancelled || !result) return
+            cancelled = true
+            controls.stop()
+            controlsRef.current = null
+            const code = result.getText()
+            setBarcode(code)
+            setPhase('found')
+            lookUpProduct(code)
+          }
+        )
+        .then(controls => {
+          if (cancelled) controls.stop()
+          else controlsRef.current = controls
+        })
+        .catch(err => {
+          if (!cancelled) {
+            setPhase('error')
+            setErrorMsg(err?.message || 'Camera access denied')
+          }
+        })
+    }, 300)
 
     return () => {
       cancelled = true
+      clearTimeout(timer)
       controlsRef.current?.stop()
       controlsRef.current = null
     }
@@ -109,7 +113,7 @@ export default function ScanView({ onBack }) {
     <div className="scan-view">
       {phase === 'scanning' && (
         <div className="scan-camera-wrap">
-          <video ref={videoRef} className="scan-video" playsInline muted autoPlay/>
+          <video ref={videoRef} className="scan-video" playsInline muted autoPlay />
           <div className="scan-overlay">
             <div className="scan-frame" />
             <p className="scan-hint">Point at a product barcode</p>
