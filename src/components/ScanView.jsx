@@ -15,7 +15,9 @@ export default function ScanView({ onBack }) {
   const [productName, setProductName] = useState('')
   const [lookingUp, setLookingUp] = useState(false)
   const [price, setPrice] = useState('')
-  const [storeId, setStoreId] = useState(STORES[0].id)
+  const [storeId, setStoreId] = useState(
+    localStorage.getItem('basketsplit_last_store') || STORES[0].id
+  )
   const [errorMsg, setErrorMsg] = useState('')
   const [customStores, setCustomStores] = useState(() => getCustomStores())
   const [showAddStore, setShowAddStore] = useState(false)
@@ -113,6 +115,7 @@ export default function ScanView({ onBack }) {
     const updated = [...customStores, store]
     setCustomStores(updated)
     setStoreId(id)
+    localStorage.setItem('basketsplit_last_store', id)
     setNewName('')
     setNewCity('')
     setNewAddress('')
@@ -123,6 +126,7 @@ export default function ScanView({ onBack }) {
 
   function handleSave() {
     if (!price || !productName.trim()) return
+    localStorage.setItem('basketsplit_last_store', storeId)
     addObservation({
       barcode,
       productName: productName.trim(),
@@ -138,7 +142,7 @@ export default function ScanView({ onBack }) {
     setProductName('')
     setPrice('')
     setLookingUp(false)
-    setStoreId(STORES[0].id)
+    setStoreId(localStorage.getItem('basketsplit_last_store') || STORES[0].id)
     setShowAddStore(false)
     setSavedFlash(false)
     setPhase('scanning')
