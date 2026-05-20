@@ -7,17 +7,17 @@ import { addObservation } from '../data/observations'
 import { getCustomStores, addCustomStore } from '../data/customStores'
 
 const WEBHOOK_URL = import.meta.env.VITE_WEBHOOK_URL
-const GPS_RADIUS_M = 400 // auto-select store if within this many meters
+const GPS_RADIUS_M = 400
 
-// Approximate coords for IE stores — fine-tune per Google Maps if needed
+// Approximate coords — fine-tune per Google Maps if needed
 const STORE_COORDS = {
-  walmart:   { lat: 34.0175, lng: -117.6912 }, // Walmart Chino
-  stater:    { lat: 33.9897, lng: -117.7201 }, // Stater Bros Chino Hills
-  food4less: { lat: 34.0640, lng: -117.6518 }, // Food 4 Less Ontario
-  aldi:      { lat: 33.9839, lng: -117.7151 }, // Aldi Chino Hills
-  cardenas:  { lat: 34.0576, lng: -117.6012 }, // Cardenas Ontario
-  northgate: { lat: 34.0563, lng: -117.6501 }, // Northgate Ontario
-  sprouts:   { lat: 33.9895, lng: -117.7095 }, // Sprouts Chino Hills
+  walmart:   { lat: 34.0175, lng: -117.6912 },
+  stater:    { lat: 33.9897, lng: -117.7201 },
+  food4less: { lat: 34.0640, lng: -117.6518 },
+  aldi:      { lat: 33.9839, lng: -117.7151 },
+  cardenas:  { lat: 34.0576, lng: -117.6012 },
+  northgate: { lat: 34.0563, lng: -117.6501 },
+  sprouts:   { lat: 33.9895, lng: -117.7095 },
 }
 
 function haversine(lat1, lng1, lat2, lng2) {
@@ -43,7 +43,8 @@ function daysAgo(ts) {
 export default function ScanView({ onBack }) {
   const videoRef = useRef(null)
   const controlsRef = useRef(null)
-  const photoInputRef = useRef(null)
+  const shelfVideoRef = useRef(null)
+  const shelfStreamRef = useRef(null)
 
   const [scanKey, setScanKey] = useState(0)
   const [phase, setPhase] = useState('scanning')
@@ -67,9 +68,11 @@ export default function ScanView({ onBack }) {
   // Phase 2.1
   const [existingPrices, setExistingPrices] = useState([])
   const [pricesLoading, setPricesLoading] = useState(false)
-  const [gpsStatus, setGpsStatus] = useState('idle') // idle | detecting | detected | failed
+  const [gpsStatus, setGpsStatus] = useState('idle')
   const [gpsStoreName, setGpsStoreName] = useState('')
-  const [photoDataUrl, setPhotoDataUrl] = useState(null)
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState(null)
+  const [photoBlob, setPhotoBlob] = useState(null)
+  const [photoCapturing, setPhotoCapturing] = useState(false)
 
   // GPS — runs once on mount
   useEffect(() => {
@@ -107,12 +110,10 @@ export default function ScanView({ onBack }) {
   // Barcode scanner
   useEffect(() => {
     let cancelled = false
-
     const timer = setTimeout(() => {
       const hints = new Map()
       hints.set(DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.UPC_A, BarcodeFormat.EAN_13])
       const reader = new BrowserMultiFormatReader(hints)
-
       reader
         .decodeFromConstraints(
           { video: { facingMode: 'environment' } },
@@ -140,7 +141,6 @@ export default function ScanView({ onBack }) {
           }
         })
     }, 300)
-
     return () => {
       cancelled = true
       clearTimeout(timer)
@@ -149,6 +149,11 @@ export default function ScanView({ onBack }) {
     }
   }, [scanKey])
 
+  // Stop shelf camera on unmount
+  useEffect(() => {
+    return () => stopShelfCamera()
+  }, [])
+
   async function fetchExistingPrices(code) {
     if (!WEBHOOK_URL) return
     setPricesLoading(true)
@@ -156,11 +161,10 @@ export default function ScanView({ onBack }) {
       const res = await fetch(WEBHOOK_URL)
       const data = await res.json()
       const matches = data
-        .filter(
-          row =>
-            String(row.barcode) === String(code) &&
-            Number(row.price) > 0 &&
-            Number(row.price) <= 200
+        .filter(row =>
+          String(row.barcode) === String(code) &&
+          Number(row.price) > 0 &&
+          Number(row.price) <= 200
         )
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
         .slice(0, 3)
@@ -188,22 +192,60 @@ export default function ScanView({ onBack }) {
     setLookingUp(false)
   }
 
-  function handlePhotoCapture(e) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const img = new Image()
-    const url = URL.createObjectURL(file)
-    img.onload = () => {
-      const MAX = 400
-      const scale = Math.min(1, MAX / Math.max(img.width, img.height))
-      const canvas = document.createElement('canvas')
-      canvas.width = Math.floor(img.width * scale)
-      canvas.height = Math.floor(img.height * scale)
-      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
-      setPhotoDataUrl(canvas.toDataURL('image/jpeg', 0.5))
-      URL.revokeObjectURL(url)
+  // ── Shelf camera (low-res live stream, no file input) ──
+  async function startShelfCamera() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 640, max: 1280 },
+          height: { ideal: 480, max: 720 },
+        },
+        audio: false,
+      })
+      shelfStreamRef.current = stream
+      if (shelfVideoRef.current) {
+        shelfVideoRef.current.srcObject = stream
+        await shelfVideoRef.current.play()
+      }
+      setPhotoCapturing(true)
+    } catch {
+      // silently fail — photo is optional
     }
-    img.src = url
+  }
+
+  function captureShelfPhoto() {
+    const video = shelfVideoRef.current
+    if (!video) return
+    const canvas = document.createElement('canvas')
+    canvas.width = 640
+    canvas.height = Math.round(video.videoHeight * (640 / video.videoWidth))
+    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height)
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) return
+        if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl)
+        setPhotoBlob(blob)
+        setPhotoPreviewUrl(URL.createObjectURL(blob))
+        canvas.width = 0
+        canvas.height = 0
+        stopShelfCamera()
+        setPhotoCapturing(false)
+      },
+      'image/jpeg',
+      0.6
+    )
+  }
+
+  function stopShelfCamera() {
+    shelfStreamRef.current?.getTracks().forEach(t => t.stop())
+    shelfStreamRef.current = null
+  }
+
+  function discardPhoto() {
+    if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl)
+    setPhotoPreviewUrl(null)
+    setPhotoBlob(null)
   }
 
   function slugify(str) {
@@ -262,22 +304,23 @@ export default function ScanView({ onBack }) {
       storeId,
       price: parseFloat(parsedPrice.toFixed(2)),
       timestamp: Date.now(),
-      hasPhoto: !!photoDataUrl,
+      hasPhoto: !!photoBlob,
     })
     setPhase('saved')
   }
 
   function resetForNextScan() {
+    discardPhoto()
     setBarcode('')
     setProductName('')
     setPrice('')
     setPriceError('')
     setLookingUp(false)
     setExistingPrices([])
-    setPhotoDataUrl(null)
     setStoreId(localStorage.getItem('basketsplit_last_store') || STORES[0].id)
     setShowAddStore(false)
     setSavedFlash(false)
+    setPhotoCapturing(false)
     setPhase('scanning')
     setScanKey(k => k + 1)
   }
@@ -309,7 +352,7 @@ export default function ScanView({ onBack }) {
           <button className="back-btn" onClick={onBack}>← Cancel</button>
           <p className="scan-code-label">Barcode: <strong>{barcode}</strong></p>
 
-          {/* Existing prices from database */}
+          {/* Existing prices */}
           {pricesLoading && (
             <div className="existing-prices-loading">🔍 Checking our database…</div>
           )}
@@ -320,12 +363,8 @@ export default function ScanView({ onBack }) {
                 const store = allStores.find(s => s.id === row.storeId)
                 return (
                   <div key={i} className="existing-price-row">
-                    <span className="existing-price-amount">
-                      ${parseFloat(row.price).toFixed(2)}
-                    </span>
-                    <span className="existing-price-store">
-                      {store?.name ?? row.storeId}
-                    </span>
+                    <span className="existing-price-amount">${parseFloat(row.price).toFixed(2)}</span>
+                    <span className="existing-price-store">{store?.name ?? row.storeId}</span>
                     <span className="existing-price-age">{daysAgo(row.timestamp)}</span>
                   </div>
                 )
@@ -347,7 +386,7 @@ export default function ScanView({ onBack }) {
             />
           )}
 
-          {/* Store select */}
+          {/* Store */}
           <label className="scan-label">Store</label>
           {gpsStatus === 'detected' && (
             <p className="gps-detected-label">📍 Auto-detected: {gpsStoreName}</p>
@@ -381,39 +420,18 @@ export default function ScanView({ onBack }) {
             </button>
           ) : (
             <form className="add-store-form" onSubmit={handleAddStore}>
-              <input
-                className="scan-input"
-                placeholder="Store Name *"
-                value={newName}
-                onChange={e => setNewName(e.target.value)}
-              />
-              <input
-                className="scan-input"
-                placeholder="City *"
-                value={newCity}
-                onChange={e => setNewCity(e.target.value)}
-              />
-              <input
-                className="scan-input"
-                placeholder="Address (optional)"
-                value={newAddress}
-                onChange={e => setNewAddress(e.target.value)}
-              />
+              <input className="scan-input" placeholder="Store Name *" value={newName} onChange={e => setNewName(e.target.value)} />
+              <input className="scan-input" placeholder="City *" value={newCity} onChange={e => setNewCity(e.target.value)} />
+              <input className="scan-input" placeholder="Address (optional)" value={newAddress} onChange={e => setNewAddress(e.target.value)} />
               {addError && <p className="add-store-error">{addError}</p>}
               <div className="add-store-row">
                 <button type="submit" className="add-store-submit">Save Store</button>
-                <button
-                  type="button"
-                  className="add-store-cancel"
-                  onClick={() => { setShowAddStore(false); setAddError('') }}
-                >
-                  Cancel
-                </button>
+                <button type="button" className="add-store-cancel" onClick={() => { setShowAddStore(false); setAddError('') }}>Cancel</button>
               </div>
             </form>
           )}
 
-          {/* Price input */}
+          {/* Price */}
           <label className="scan-label">Price Seen Today</label>
           <div className="scan-price-wrap">
             <span className="scan-dollar">$</span>
@@ -432,37 +450,38 @@ export default function ScanView({ onBack }) {
             <p style={{ color: '#C62828', fontSize: 13, marginTop: 8 }}>{priceError}</p>
           )}
 
-          {/* Photo capture */}
+          {/* Shelf photo — live stream capture */}
           <label className="scan-label" style={{ marginTop: 20 }}>
             Shelf Tag Photo{' '}
             <span style={{ fontWeight: 400, opacity: 0.55 }}>(optional)</span>
           </label>
-          <input
-            ref={photoInputRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            style={{ display: 'none' }}
-            onChange={handlePhotoCapture}
-          />
-          {!photoDataUrl ? (
-            <button
-              type="button"
-              className="add-store-btn"
-              onClick={() => photoInputRef.current?.click()}
-            >
+
+          {photoCapturing && (
+            <div className="shelf-camera-wrap">
+              <video
+                ref={shelfVideoRef}
+                className="shelf-video"
+                playsInline
+                muted
+                autoPlay
+              />
+              <div className="shelf-camera-btns">
+                <button className="cta-btn" onClick={captureShelfPhoto}>📷 Capture</button>
+                <button className="add-store-cancel" onClick={() => { stopShelfCamera(); setPhotoCapturing(false) }}>Cancel</button>
+              </div>
+            </div>
+          )}
+
+          {!photoCapturing && !photoPreviewUrl && (
+            <button type="button" className="add-store-btn" onClick={startShelfCamera}>
               📷 Take Photo of Shelf Tag
             </button>
-          ) : (
+          )}
+
+          {!photoCapturing && photoPreviewUrl && (
             <div className="photo-preview-wrap">
-              <img src={photoDataUrl} alt="Shelf tag" className="photo-preview" />
-              <button
-                type="button"
-                className="add-store-cancel"
-                onClick={() => setPhotoDataUrl(null)}
-              >
-                Remove
-              </button>
+              <img src={photoPreviewUrl} alt="Shelf tag" className="photo-preview" />
+              <button type="button" className="add-store-cancel" onClick={discardPhoto}>Remove</button>
             </div>
           )}
 
@@ -484,19 +503,11 @@ export default function ScanView({ onBack }) {
           <h2 className="scan-saved-title">Price Saved!</h2>
           <div className="scan-saved-detail">
             <span className="scan-saved-name">{productName}</span>
-            <span className="scan-saved-meta">
-              ${parseFloat(price).toFixed(2)} at {savedStore?.name}
-            </span>
-            {photoDataUrl && (
-              <span className="scan-saved-meta">📷 Photo attached</span>
-            )}
+            <span className="scan-saved-meta">${parseFloat(price).toFixed(2)} at {savedStore?.name}</span>
+            {photoBlob && <span className="scan-saved-meta">📷 Photo attached</span>}
           </div>
-          <button className="cta-btn" style={{ marginTop: 32 }} onClick={resetForNextScan}>
-            Scan Another
-          </button>
-          <button className="back-btn scan-done-btn" onClick={onBack}>
-            Done
-          </button>
+          <button className="cta-btn" style={{ marginTop: 32 }} onClick={resetForNextScan}>Scan Another</button>
+          <button className="back-btn scan-done-btn" onClick={onBack}>Done</button>
         </div>
       )}
 
@@ -507,9 +518,7 @@ export default function ScanView({ onBack }) {
           <div className="scan-error-box">
             <p className="scan-error-title">Camera Unavailable</p>
             <p className="scan-error-msg">{errorMsg}</p>
-            <p className="scan-error-tip">
-              Allow camera access in your browser settings, then tap Scan again.
-            </p>
+            <p className="scan-error-tip">Allow camera access in your browser settings, then tap Scan again.</p>
           </div>
         </div>
       )}
