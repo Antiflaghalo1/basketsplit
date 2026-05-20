@@ -1,10 +1,44 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
-  <rect width="192" height="192" rx="36" fill="#2E7D32"/>
-  <path d="M44 56h16l18 64h72l16-48H76" 
-        fill="none" stroke="white" stroke-width="10" 
+  <!-- Background rounded square -->
+  <rect width="192" height="192" rx="40" fill="#4A7C59"/>
+
+  <!-- CART (white) -->
+  <path d="M 26,70 L 55,70 Q 64,70 66,80 L 70,106 L 162,106 L 154,150 L 54,150 L 70,106"
+        stroke="white" stroke-width="11" fill="none"
         stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="88" cy="136" r="10" fill="white"/>
-  <circle cx="136" cy="136" r="10" fill="white"/>
-  <path d="M118 48 L98 88 L112 88 L92 128 L128 80 L114 80 Z" 
-        fill="#FFD600"/>
+  <circle cx="78" cy="165" r="12" fill="white"/>
+  <circle cx="140" cy="165" r="12" fill="white"/>
+
+  <!-- SQUIRREL (warm tan) -->
+
+  <!-- Tail — drawn first so body/head layer on top -->
+  <path d="M 112,114 C 162,88 168,44 144,26 C 122,12 102,22 106,52"
+        stroke="#D4875A" stroke-width="20" fill="none" stroke-linecap="round"/>
+
+  <!-- Body -->
+  <ellipse cx="90" cy="114" rx="22" ry="12" fill="#D4875A"/>
+
+  <!-- Head -->
+  <circle cx="90" cy="82" r="26" fill="#D4875A"/>
+
+  <!-- Left ear -->
+  <ellipse cx="74" cy="60" rx="11" ry="14" fill="#D4875A"/>
+  <ellipse cx="74" cy="61" rx="6.5" ry="8" fill="#B86840"/>
+
+  <!-- Right ear -->
+  <ellipse cx="106" cy="58" rx="11" ry="14" fill="#D4875A"/>
+  <ellipse cx="106" cy="59" rx="6.5" ry="8" fill="#B86840"/>
+
+  <!-- Eyes -->
+  <circle cx="79" cy="80" r="7.5" fill="#1C1008"/>
+  <circle cx="101" cy="80" r="7.5" fill="#1C1008"/>
+  <circle cx="81.5" cy="77.5" r="3" fill="white"/>
+  <circle cx="103.5" cy="77.5" r="3" fill="white"/>
+
+  <!-- Nose -->
+  <ellipse cx="90" cy="93" rx="4.5" ry="3.5" fill="#8B3A20"/>
+
+  <!-- Cheeks -->
+  <ellipse cx="68" cy="92" rx="10" ry="7" fill="#E89060" opacity="0.5"/>
+  <ellipse cx="112" cy="92" rx="10" ry="7" fill="#E89060" opacity="0.5"/>
 </svg>
