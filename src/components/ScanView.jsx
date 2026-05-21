@@ -229,14 +229,11 @@ export default function ScanView({ onBack, user }) {
 
     if (!imageUrl) {
       try {
-        const res2 = await fetch(`https://api.upcitemdb.com/prod/trial/lookup?upc=${code}`, {
-          headers: { 'Content-Type': 'application/json' },
-        })
+        const res2 = await fetch(`/api/lookup?upc=${encodeURIComponent(code)}`)
         const data2 = await res2.json()
-        const item = data2.items?.[0]
-        if (item?.images?.[0]) setProductImageUrl(item.images[0])
-        if (!brand && item?.brand) setProductBrand(item.brand)
-        if (!category && item?.category) setProductCategory(item.category)
+        if (data2.image_url) setProductImageUrl(data2.image_url)
+        if (!brand && data2.brand) setProductBrand(data2.brand)
+        if (!category && data2.category) setProductCategory(data2.category)
       } catch {}
     }
 
