@@ -5,6 +5,7 @@ import { STORES } from '../data/stores'
 import { PRODUCTS } from '../data/products'
 import { addObservation, upsertProduct } from '../data/observations'
 import { getCustomStores, addCustomStore } from '../data/customStores'
+import { supabase } from '../lib/supabase'
 
 const WEBHOOK_URL = import.meta.env.VITE_WEBHOOK_URL
 const GPS_RADIUS_M = 400
@@ -184,6 +185,21 @@ export default function ScanView({ onBack, user }) {
     setProductCategory('')
     setProductQuantity('')
     setProductImageUrl('')
+
+    const { data: cached } = await supabase
+      .from('products')
+      .select('name, brand, category, quantity, image_url')
+      .eq('upc', code)
+      .maybeSingle()
+
+    if (cached?.name) {
+      setProductName(cached.name)
+      setProductBrand(cached.brand || '')
+      setProductCategory(cached.category || '')
+      setProductQuantity(cached.quantity || '')
+      setProductImageUrl(cached.image_url || '')
+      return
+    }
 
     if (PRODUCTS[code]) {
       setProductName(PRODUCTS[code])
