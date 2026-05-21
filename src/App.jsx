@@ -11,6 +11,8 @@ import ProfileView from './components/ProfileView'
 import HamburgerDrawer from './components/HamburgerDrawer'
 import BudgetView from './components/BudgetView'
 import CategoriesView from './components/CategoriesView'
+import HomeView from './components/HomeView'
+import TutorialOverlay from './components/TutorialOverlay'
 import { supabase } from './lib/supabase'
 import './App.css'
 
@@ -20,12 +22,13 @@ export default function App() {
   const [selectedItems, setSelectedItems] = useState(new Set())
   const [budget, setBudget] = useState('')
   const [results, setResults] = useState(null)
-  const [view, setView] = useState('list')
+  const [view, setView] = useState('home')
   const [showNoBudgetBanner, setShowNoBudgetBanner] = useState(false)
   const [user, setUser] = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [showDrawer, setShowDrawer] = useState(false)
+  const [showTutorial, setShowTutorial] = useState(!localStorage.getItem('bs_tutorial_seen'))
   const viewStack = useRef([])
   const userRef = useRef(null)
 
@@ -160,6 +163,15 @@ export default function App() {
         </div>
       </header>
 
+      {view === 'home' && (
+        <HomeView
+          user={user}
+          budget={budget}
+          onBudgetNav={() => navTo('budget')}
+          onSeeAll={() => navTo('recent')}
+        />
+      )}
+
       {view === 'scan' && <ScanView onBack={goBack} user={user} />}
       {view === 'recent' && <RecentScansView onBack={goBack} userId={user?.id} />}
       {view === 'auth' && <AuthView onBack={goBack} onLegal={(type) => navTo(type)} />}
@@ -275,12 +287,20 @@ export default function App() {
         onBudgetNav={() => { setShowDrawer(false); navTo('budget') }}
         onLegal={(type) => { setShowDrawer(false); navTo(type) }}
         onMyScans={() => { setShowDrawer(false); navTo('recent') }}
+        onHelp={() => { setShowDrawer(false); setShowTutorial(true) }}
         onSignOut={() => { setShowDrawer(false); handleSignOut() }}
       />
 
+      {showTutorial && (
+        <TutorialOverlay onComplete={() => {
+          localStorage.setItem('bs_tutorial_seen', '1')
+          setShowTutorial(false)
+        }} />
+      )}
+
       {view !== 'scan' && view !== 'auth' && view !== 'tos' && view !== 'privacy' && (
         <nav className="bottom-nav">
-          <button className={`bottom-nav-tab${view === 'list' ? ' active' : ''}`} onClick={() => navTo('list')}>
+          <button className={`bottom-nav-tab${view === 'home' ? ' active' : ''}`} onClick={() => navTo('home')}>
             <Home size={22} />
             <span className="bottom-nav-label">Home</span>
           </button>
