@@ -190,18 +190,40 @@ export default function ScanView({ onBack, user }) {
       return
     }
     setLookingUp(true)
+
+    let imageUrl = ''
+    let brand = ''
+    let category = ''
+
     try {
       const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`)
       const data = await res.json()
       if (data.status === 1 && data.product?.product_name) {
         const qty = data.product.quantity ? ` ${data.product.quantity}` : ''
         setProductName(data.product.product_name + qty)
-        setProductBrand(data.product.brands || '')
-        setProductCategory((data.product.categories || '').split(',')[0]?.trim() || '')
+        brand = data.product.brands || ''
+        setProductBrand(brand)
+        category = (data.product.categories || '').split(',')[0]?.trim() || ''
+        setProductCategory(category)
         setProductQuantity(data.product.quantity || '')
-        setProductImageUrl(data.product.image_front_url || data.product.image_url || '')
+        imageUrl = data.product.image_front_url || data.product.image_url || ''
+        setProductImageUrl(imageUrl)
       }
     } catch {}
+
+    if (!imageUrl) {
+      try {
+        const res2 = await fetch(`https://api.upcitemdb.com/prod/trial/lookup?upc=${code}`, {
+          headers: { 'Content-Type': 'application/json' },
+        })
+        const data2 = await res2.json()
+        const item = data2.items?.[0]
+        if (item?.images?.[0]) setProductImageUrl(item.images[0])
+        if (!brand && item?.brand) setProductBrand(item.brand)
+        if (!category && item?.category) setProductCategory(item.category)
+      } catch {}
+    }
+
     setLookingUp(false)
   }
 
