@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 
-export default function AuthView({ onBack }) {
+export default function AuthView({ onBack, gated = false }) {
   const [mode, setMode] = useState('signin') // signin | signup
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -31,7 +31,7 @@ export default function AuthView({ onBack }) {
 
   return (
     <div className="scan-form" style={{ maxWidth: 420, margin: '0 auto', paddingTop: 32 }}>
-      <button className="back-btn" onClick={onBack}>← Back</button>
+      {!gated && <button className="back-btn" onClick={onBack}>← Back</button>}
 
       <h2 style={{ fontSize: 22, fontWeight: 900, color: 'var(--green)', marginBottom: 4, marginTop: 16 }}>
         {mode === 'signin' ? 'Welcome back 👋' : 'Create an account 🐿️'}

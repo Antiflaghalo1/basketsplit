@@ -288,7 +288,7 @@ export default function ScanView({ onBack, user }) {
     setSavedFlash(true)
   }
 
-  function handleSave() {
+  async function handleSave() {
     const parsedPrice = parseFloat(price)
     setPriceError('')
     if (!price || !productName.trim()) return

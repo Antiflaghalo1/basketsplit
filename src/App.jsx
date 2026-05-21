@@ -15,12 +15,14 @@ export default function App() {
   const [view, setView] = useState('list')
   const [showNoBudgetBanner, setShowNoBudgetBanner] = useState(false)
   const [user, setUser] = useState(null)
+  const [authLoading, setAuthLoading] = useState(true)
   const viewStack = useRef([])
 
   // Auth state listener
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
+      setAuthLoading(false)
     })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
@@ -72,6 +74,28 @@ export default function App() {
 
   // User initial for header avatar
   const userInitial = user?.email?.[0]?.toUpperCase()
+
+  // Auth gate
+  if (authLoading) return (
+    <div className="app" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100dvh' }}>
+      <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Loading…</p>
+    </div>
+  )
+
+  if (!user) return (
+    <div className="app">
+      <header className="header">
+        <div className="header-inner">
+          <span className="logo">🛒</span>
+          <div className="header-text">
+            <h1>BasketSplit</h1>
+            <p className="tagline">IE's smartest grocery optimizer</p>
+          </div>
+        </div>
+      </header>
+      <AuthView onBack={() => {}} gated />
+    </div>
+  )
 
   return (
     <div className="app">
