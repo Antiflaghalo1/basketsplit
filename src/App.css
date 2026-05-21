@@ -51,11 +51,43 @@ h1 { font-size: 20px; font-weight: 800; }
 .item-check { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; background: #e0e0e0; color: #999; transition: all .12s; }
 .selected .item-check { background: var(--green); color: white; }
 
-/* CTA */
-.footer-cta { position: sticky; bottom: 72px; padding: 24px 18px 18px; background: linear-gradient(transparent, var(--bg) 40%); }
+/* Shared primary CTA button (used by BudgetView save, etc.) */
 .cta-btn { width: 100%; background: var(--green); color: white; border: none; border-radius: 14px; padding: 16px; font-size: 17px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 14px rgba(74,124,89,.35); transition: all .12s; }
 .cta-btn:active { transform: scale(.98); box-shadow: none; }
 .cta-btn:disabled { background: #ccc; box-shadow: none; cursor: default; }
+
+/* CTA floating button */
+.cta-floating {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(120px);
+  width: calc(100% - 36px);
+  max-width: 420px;
+  background: var(--green);
+  color: white;
+  border: none;
+  border-radius: 14px;
+  padding: 16px;
+  font-size: 17px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(74,124,89,.4), 0 2px 8px rgba(0,0,0,.12);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 50;
+  transition: transform 0.25s ease-in, opacity 0.25s ease-in;
+}
+.cta-floating-visible {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+  transition: transform 0.35s ease-out, opacity 0.35s ease-out;
+}
+.cta-floating-visible:active {
+  transform: translateX(-50%) translateY(0) scale(0.97);
+  box-shadow: 0 2px 8px rgba(74,124,89,.25);
+}
 
 /* No-budget nudge banner */
 .no-budget-banner { display: flex; align-items: flex-start; gap: 10px; margin: 10px 10px 0; background: #f0f0f0; border: 1px solid var(--border); border-radius: 10px; padding: 11px 12px; font-size: 13px; color: var(--text-muted); line-height: 1.4; }
@@ -263,12 +295,39 @@ h1 { font-size: 20px; font-weight: 800; }
 .saved-signout-btn:active { background: var(--border); }
 
 /* ── Budget full-page view ── */
-.budget-view { padding: 28px 24px 40px; }
+@keyframes budgetEntrance {
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes budgetPulse {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+.budget-view { padding: 28px 24px 40px; animation: budgetEntrance 0.4s ease-out both; }
 .budget-view-title { font-size: 28px; font-weight: 900; color: var(--green); margin-bottom: 8px; }
 .budget-view-sub { font-size: 14px; color: var(--text-muted); line-height: 1.5; margin-bottom: 32px; }
-.budget-view-amount { font-size: 48px; font-weight: 800; color: var(--green); text-align: center; margin-bottom: 16px; letter-spacing: -1px; }
-.budget-slider { width: 100%; accent-color: var(--green); height: 6px; cursor: pointer; }
-.budget-view-range-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin-top: 6px; margin-bottom: 32px; }
+.budget-view-amount { font-size: 48px; font-weight: 800; color: var(--green); text-align: center; margin-bottom: 4px; letter-spacing: -1px; }
+.budget-amount-pulse { animation: budgetPulse 0.2s ease-in-out; }
+.budget-timeframe-label { text-align: center; font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+.budget-slider {
+  width: 100%;
+  height: 6px;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: 3px;
+  outline: none;
+  margin-bottom: 2px;
+}
+.budget-slider::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: transparent; }
+.budget-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%; background: var(--green); cursor: pointer; box-shadow: 0 1px 6px rgba(74,124,89,.4); margin-top: -8px; }
+.budget-slider::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: var(--green); border: none; cursor: pointer; box-shadow: 0 1px 6px rgba(74,124,89,.4); }
+.budget-view-range-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin-top: 6px; margin-bottom: 20px; }
+.budget-pills { display: flex; gap: 8px; justify-content: center; margin-bottom: 28px; }
+.budget-pill { flex: 1; border-radius: 20px; padding: 8px 0; font-size: 13px; font-weight: 700; cursor: pointer; border: 1.5px solid var(--border); background: white; color: var(--text-muted); transition: all 0.15s; }
+.budget-pill-active { background: var(--green); border-color: var(--green); color: white; }
 .budget-view-cta { margin-top: 0; }
 @keyframes budget-fade-out { 0% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; } }
 .budget-view-saved { text-align: center; color: var(--green); font-size: 15px; font-weight: 700; margin-top: 14px; animation: budget-fade-out 2s ease forwards; }
+.budget-savings-tip { text-align: center; font-size: 13px; color: var(--text-muted); margin-top: 18px; line-height: 1.5; padding: 0 4px; }

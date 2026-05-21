@@ -189,13 +189,12 @@ export default function App() {
             </div>
           ))}
 
-          {selectedItems.size > 0 && (
-            <div className="footer-cta">
-              <button className="cta-btn" onClick={optimize} disabled={selectedItems.size === 0}>
-                Find Best Prices →
-              </button>
-            </div>
-          )}
+          <button
+            className={`cta-floating${selectedItems.size > 0 ? ' cta-floating-visible' : ''}`}
+            onClick={optimize}
+          >
+            Find Best Prices →
+          </button>
         </>
       )}
 
