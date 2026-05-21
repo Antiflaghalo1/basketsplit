@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { ITEMS } from './data/stores'
 import { optimizeBasket } from './utils/optimizer'
 import ScanView from './components/ScanView'
+import RecentScansView from './components/RecentScansView'
 import AuthView from './components/AuthView'
 import ProfileMenu from './components/ProfileMenu'
 import { supabase } from './lib/supabase'
@@ -124,10 +125,15 @@ export default function App() {
             <p className="tagline">IE's smartest grocery optimizer</p>
           </div>
           <div className="header-actions">
-            {view !== 'scan' && (
-              <button className="scan-header-btn" onClick={() => navTo('scan')}>
-                📷 Scan
-              </button>
+            {view !== 'scan' && view !== 'recent' && (
+              <>
+                <button className="scan-header-btn" onClick={() => navTo('scan')}>
+                  📷 Scan
+                </button>
+                <button className="scan-header-btn" onClick={() => navTo('recent')}>
+                  📦 Recent
+                </button>
+              </>
             )}
             {user ? (
               <button className="user-avatar-btn" title={user.email} onClick={() => setShowProfileMenu(true)}>
@@ -143,6 +149,7 @@ export default function App() {
       </header>
 
       {view === 'scan' && <ScanView onBack={goBack} user={user} />}
+      {view === 'recent' && <RecentScansView onBack={goBack} />}
       {view === 'auth' && <AuthView onBack={goBack} />}
 
       {view === 'list' && (

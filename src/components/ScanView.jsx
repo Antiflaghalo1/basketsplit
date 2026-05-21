@@ -3,7 +3,7 @@ import { BrowserMultiFormatReader } from '@zxing/browser'
 import { DecodeHintType, BarcodeFormat } from '@zxing/library'
 import { STORES } from '../data/stores'
 import { PRODUCTS } from '../data/products'
-import { addObservation } from '../data/observations'
+import { addObservation, upsertProduct } from '../data/observations'
 import { getCustomStores, addCustomStore } from '../data/customStores'
 
 const WEBHOOK_URL = import.meta.env.VITE_WEBHOOK_URL
@@ -66,6 +66,10 @@ export default function ScanView({ onBack, user }) {
   const [savedFlash, setSavedFlash] = useState(false)
 
   // Phase 2.1
+  const [productBrand, setProductBrand] = useState('')
+  const [productCategory, setProductCategory] = useState('')
+  const [productQuantity, setProductQuantity] = useState('')
+  const [productImageUrl, setProductImageUrl] = useState('')
   const [existingPrices, setExistingPrices] = useState([])
   const [pricesLoading, setPricesLoading] = useState(false)
   const [gpsStatus, setGpsStatus] = useState('idle')
@@ -176,6 +180,11 @@ export default function ScanView({ onBack, user }) {
   }
 
   async function lookUpProduct(code) {
+    setProductBrand('')
+    setProductCategory('')
+    setProductQuantity('')
+    setProductImageUrl('')
+
     if (PRODUCTS[code]) {
       setProductName(PRODUCTS[code])
       return
@@ -187,6 +196,10 @@ export default function ScanView({ onBack, user }) {
       if (data.status === 1 && data.product?.product_name) {
         const qty = data.product.quantity ? ` ${data.product.quantity}` : ''
         setProductName(data.product.product_name + qty)
+        setProductBrand(data.product.brands || '')
+        setProductCategory((data.product.categories || '').split(',')[0]?.trim() || '')
+        setProductQuantity(data.product.quantity || '')
+        setProductImageUrl(data.product.image_front_url || data.product.image_url || '')
       }
     } catch {}
     setLookingUp(false)
@@ -301,6 +314,14 @@ export default function ScanView({ onBack, user }) {
       return
     }
     localStorage.setItem('basketsplit_last_store', storeId)
+    await upsertProduct({
+      upc: barcode,
+      name: productName.trim(),
+      brand: productBrand,
+      category: productCategory,
+      quantity: productQuantity,
+      image_url: productImageUrl,
+    })
     await addObservation({
       barcode,
       productName: productName.trim(),
@@ -316,6 +337,10 @@ export default function ScanView({ onBack, user }) {
     discardPhoto()
     setBarcode('')
     setProductName('')
+    setProductBrand('')
+    setProductCategory('')
+    setProductQuantity('')
+    setProductImageUrl('')
     setPrice('')
     setPriceError('')
     setLookingUp(false)
