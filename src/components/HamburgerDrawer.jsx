@@ -1,6 +1,9 @@
 import { Wallet, Package, FileText, Shield, LogOut, HelpCircle } from 'lucide-react'
 
-export default function HamburgerDrawer({ isOpen, onClose, budget, onBudgetNav, onLegal, onMyScans, onHelp, onSignOut }) {
+export default function HamburgerDrawer({ isOpen, onClose, budget, avatarUrl, firstName, lastName, userEmail, onBudgetNav, onLegal, onMyScans, onHelp, onSignOut }) {
+  const displayName = (firstName || lastName) ? `${firstName} ${lastName}`.trim() : userEmail
+  const initial = (firstName || userEmail || '?')[0].toUpperCase()
+
   return (
     <div className={`drawer-backdrop${isOpen ? ' drawer-backdrop--open' : ''}`} onClick={onClose}>
       <div
@@ -10,6 +13,21 @@ export default function HamburgerDrawer({ isOpen, onClose, budget, onBudgetNav, 
         <button className="drawer-close-btn" onClick={onClose}>✕</button>
 
         <div className="drawer-header">BasketSplit 🛒</div>
+
+        <div className="drawer-profile">
+          <div className="drawer-profile-avatar">
+            {avatarUrl
+              ? <img src={avatarUrl} alt="avatar" />
+              : <span>{initial}</span>
+            }
+          </div>
+          <div className="drawer-profile-info">
+            <div className="drawer-profile-name">{displayName}</div>
+            {(firstName || lastName) && userEmail && (
+              <div className="drawer-profile-email">{userEmail}</div>
+            )}
+          </div>
+        </div>
 
         <div className="drawer-divider" />
 

@@ -227,12 +227,6 @@ export default function App() {
                 <span className="topbar-cart-badge">{selectedItems.size}</span>
               )}
             </div>
-            <button className="user-avatar-btn" onClick={() => navTo('profile')}>
-              {avatarUrl
-                ? <img src={avatarUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
-                : userInitial
-              }
-            </button>
           </div>
         </div>
       </header>
@@ -409,6 +403,10 @@ export default function App() {
         isOpen={showDrawer}
         onClose={() => setShowDrawer(false)}
         budget={budget}
+        avatarUrl={avatarUrl}
+        firstName={firstName}
+        lastName={lastName}
+        userEmail={user?.email}
         onBudgetNav={() => { setShowDrawer(false); navTo('budget') }}
         onLegal={(type) => { setShowDrawer(false); navTo(type) }}
         onMyScans={() => { setShowDrawer(false); navTo('recent') }}
