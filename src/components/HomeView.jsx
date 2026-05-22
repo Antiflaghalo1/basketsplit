@@ -1,39 +1,19 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { MapPin, Clock, TrendingUp, Package } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { getAllStores } from '../data/storeService'
 
-function namesMatch(a, b) {
-  const stop = new Set(['a', 'an', 'the', 'and', 'or', 'of', 'in', 'with', 'for', 'oz', 'lb'])
-  const words = s => s.toLowerCase().split(/\W+/).filter(w => w.length > 2 && !stop.has(w))
-  const wa = words(a), wb = words(b)
-  return wa.some(w => wb.includes(w))
-}
-
-function categoryEmoji(cat) {
-  const c = (cat || '').toLowerCase()
-  if (/produce|fruit|vegetable/.test(c)) return '🥬'
-  if (/meat|poultry/.test(c)) return '🥩'
-  if (/dairy/.test(c)) return '🥛'
-  if (/bakery|bread/.test(c)) return '🥖'
-  if (/beverage/.test(c)) return '🥤'
-  if (/snack/.test(c)) return '🍿'
-  if (/frozen/.test(c)) return '🧊'
-  if (/pantry|canned/.test(c)) return '🥫'
+function categoryEmoji(name) {
+  const n = (name || '').toLowerCase()
+  if (/watermelon|apple|banana|grape|berry|strawberr|blueberr|raspberr|peach|pear|mango|pineapple|orange|lemon|lime|cherry|melon|avocado|tomato|lettuce|spinach|kale|broccoli|carrot|celery|pepper|cucumber|zucchini|mushroom|onion|garlic|potato|corn|peas|bean|asparagus|cauliflower/.test(n)) return '🥬'
+  if (/chicken|beef|pork|turkey|salmon|tuna|shrimp|steak|ground|sausage|bacon|ham|lamb|fish|seafood|tilapia|cod|crab|lobster/.test(n)) return '🥩'
+  if (/milk|yogurt|cheese|butter|cream|dairy|egg/.test(n)) return '🥛'
+  if (/bread|bagel|muffin|croissant|bun|roll|tortilla|wrap|pita|cake|cookie|brownie|pastry/.test(n)) return '🥖'
+  if (/juice|water|soda|pop|drink|tea|coffee|lemonade|cola|beer|wine|sparkling/.test(n)) return '🥤'
+  if (/chip|cracker|pretzel|popcorn|snack|nut|almond|cashew|granola|trail mix/.test(n)) return '🍿'
+  if (/frozen|ice cream|pizza|waffle|burrito/.test(n)) return '🧊'
+  if (/pasta|noodle|rice|quinoa|oat|cereal|flour|sugar|oil|sauce|soup|canned|salsa|peanut butter|jelly|jam|mayo|mustard|ketchup|vinegar|syrup/.test(n)) return '🥫'
   return '🛒'
-}
-
-async function fetchFlippImage(name) {
-  try {
-    const res = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(name)}&json=1&page_size=1`)
-    if (!res.ok) return null
-    const { products } = await res.json()
-    const p = products?.[0]
-    if (p?.image_url && p?.product_name && namesMatch(name, p.product_name)) return p.image_url
-    return null
-  } catch {
-    return null
-  }
 }
 
 function haversine(lat1, lng1, lat2, lng2) {
@@ -49,8 +29,6 @@ export default function HomeView({ user, firstName, budget, onBudgetNav, onSeeAl
   const [recentProducts, setRecentProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [deals, setDeals] = useState([])
-  const [dealImages, setDealImages] = useState({})
-  const dealFetchingRef = useRef(new Set())
   const [pulseStats, setPulseStats] = useState({ prices: null, products: null })
 
   const budgetNum = parseFloat(budget) || 0
@@ -64,16 +42,6 @@ export default function HomeView({ user, firstName, budget, onBudgetNav, onSeeAl
       setPulseStats({ prices, products })
     })
   }, [])
-
-  useEffect(() => {
-    deals.forEach(deal => {
-      if (dealFetchingRef.current.has(deal.product_name)) return
-      dealFetchingRef.current.add(deal.product_name)
-      fetchFlippImage(deal.product_name).then(url => {
-        setDealImages(prev => ({ ...prev, [deal.product_name]: url }))
-      })
-    })
-  }, [deals])
 
   useEffect(() => {
     getAllStores().then(rawStores => {
@@ -221,13 +189,7 @@ export default function HomeView({ user, firstName, budget, onBudgetNav, onSeeAl
           <div className="home-deals-scroll">
             {deals.map((deal, i) => (
               <div key={i} className="home-deal-card">
-                {dealImages[deal.product_name]
-                  ? <img src={dealImages[deal.product_name]} alt={deal.product_name} className="home-recent-thumb" />
-                  : <div className="home-recent-thumb home-recent-thumb-placeholder" style={{ background: 'var(--green-pale)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>
-                      {categoryEmoji(deal.product_name)}
-                    </div>
-                }
-                <div className="home-deal-name">{deal.product_name}</div>
+                <div className="home-deal-name">{categoryEmoji(deal.product_name)} {deal.product_name}</div>
                 <div className="home-deal-price">${Number(deal.price).toFixed(2)}</div>
                 <div className="home-deal-store">{storeNameMap[String(deal.store_id)] || deal.store_id}</div>
                 <span className="sale-badge">🏷️ Sale</span>
