@@ -15,6 +15,7 @@ export default function HomeView({ user, firstName, budget, onBudgetNav, onSeeAl
   const [stores, setStores] = useState([])
   const [recentProducts, setRecentProducts] = useState([])
   const [loading, setLoading] = useState(true)
+  const [deals, setDeals] = useState([])
 
   const budgetNum = parseFloat(budget) || 0
 
@@ -33,7 +34,24 @@ export default function HomeView({ user, firstName, budget, onBudgetNav, onSeeAl
       )
     })
     loadRecent()
+    loadDeals()
   }, [])
+
+  async function loadDeals() {
+    try {
+      const today = new Date().toISOString().split('T')[0]
+      const { data } = await supabase
+        .from('flipp_observations')
+        .select('product_name, store_id, price, valid_to, sale_type')
+        .gt('price', 0)
+        .or(`valid_to.is.null,valid_to.gte.${today}`)
+        .order('price', { ascending: true })
+        .limit(20)
+      setDeals(data || [])
+    } catch {
+      setDeals([])
+    }
+  }
 
   async function loadRecent() {
     setLoading(true)
@@ -74,6 +92,8 @@ export default function HomeView({ user, firstName, budget, onBudgetNav, onSeeAl
     setLoading(false)
   }
 
+  const storeNameMap = Object.fromEntries(stores.map(s => [String(s.id), s.name]))
+
   return (
     <div className="home-view">
       {/* Section 1 — Greeting */}
@@ -108,6 +128,27 @@ export default function HomeView({ user, firstName, budget, onBudgetNav, onSeeAl
           ))}
         </div>
       </div>
+
+      {/* Section 2.5 — This Week's Deals */}
+      {deals.length > 0 && (
+        <div className="home-section">
+          <div className="home-section-header">
+            <div className="home-section-title" style={{ color: 'var(--green)' }}>This Week's Deals 🏷️</div>
+            <div className="home-section-sub">From local store circulars</div>
+          </div>
+          <div className="home-deals-scroll">
+            {deals.map((deal, i) => (
+              <div key={i} className="home-deal-card">
+                <div className="home-deal-name">{deal.product_name}</div>
+                <div className="home-deal-price">${Number(deal.price).toFixed(2)}</div>
+                <div className="home-deal-store">{storeNameMap[String(deal.store_id)] || deal.store_id}</div>
+                <span className="sale-badge">🏷️ Sale</span>
+                {deal.sale_type && <div className="home-deal-type">{deal.sale_type}</div>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Section 3 — Recently Scanned */}
       <div className="home-section">
