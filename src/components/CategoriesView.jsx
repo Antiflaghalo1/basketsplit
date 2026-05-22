@@ -255,8 +255,9 @@ export default function CategoriesView({ onBack, userId, savedUpcs = new Set(), 
   return (
     <div className="categories-view">
       <button className="back-btn" onClick={onBack}>← Back</button>
-      <div className="categories-header">
-        <h2 className="categories-title">🗂️ Categories</h2>
+      <div className="cat-page-header">
+        <span className="cat-emoji-pill">🗂️</span>
+        <h2 className="categories-title">Categories</h2>
         <p className="categories-sub">Built from real community scans</p>
       </div>
 

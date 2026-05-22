@@ -325,7 +325,8 @@ h1 { font-size: 20px; font-weight: 800; }
 .saved-signout-btn { width: 100%; background: none; border: 1.5px solid var(--border); border-radius: 12px; padding: 14px; font-size: 16px; font-weight: 700; color: var(--text-muted); cursor: pointer; }
 .saved-signout-btn:active { background: var(--border); }
 .saved-row-wrap { position: relative; overflow: hidden; }
-.saved-delete-reveal { position: absolute; right: 0; top: 0; bottom: 0; width: 80px; background: #C62828; display: flex; align-items: center; justify-content: center; color: white; font-size: 13px; font-weight: 600; }
+.saved-delete-reveal { position: absolute; right: 0; top: 0; bottom: 0; width: 80px; z-index: 0; background: #C62828; display: flex; align-items: center; justify-content: center; color: white; font-size: 13px; font-weight: 600; }
+.saved-row-wrap .item-row { position: relative; z-index: 1; width: 100%; will-change: transform; transform: translateX(0); }
 
 /* ── Budget full-page view ── */
 @keyframes budgetEntrance {
@@ -368,8 +369,10 @@ h1 { font-size: 20px; font-weight: 800; }
 /* ── Categories view ── */
 .categories-view { padding: 18px 18px 40px; }
 .categories-header { margin: 12px 0 18px; }
-.categories-title { font-size: 24px; font-weight: 900; color: var(--green); margin: 0 0 4px; }
+.categories-title { font-size: 26px; font-weight: 800; color: var(--green); margin: 0; }
 .categories-sub { font-size: 13px; color: var(--text-muted); margin: 0; }
+.cat-page-header { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; margin: 12px 0 18px; }
+.cat-emoji-pill { display: inline-block; background: #EAF3DE; padding: 10px 18px; border-radius: 20px; font-size: 32px; margin-bottom: 10px; }
 .categories-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .cat-card { background: white; border: 1.5px solid var(--border); border-radius: 12px; overflow: hidden; cursor: pointer; text-align: left; display: flex; flex-direction: column; padding: 0; width: 100%; }
 .cat-card:active { opacity: .82; }
