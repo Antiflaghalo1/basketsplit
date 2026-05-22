@@ -98,7 +98,7 @@ export default function HomeView({ user, firstName, budget, onBudgetNav, onSeeAl
       const today = new Date().toISOString().split('T')[0]
       const { data } = await supabase
         .from('flipp_observations')
-        .select('product_name, store_id, price, valid_to, sale_type, normalized_category')
+        .select('product_name, store_id, price, valid_to, sale_type')
         .gt('price', 0)
         .or(`valid_to.is.null,valid_to.gte.${today}`)
         .order('price', { ascending: true })
@@ -224,7 +224,7 @@ export default function HomeView({ user, firstName, budget, onBudgetNav, onSeeAl
                 {dealImages[deal.product_name]
                   ? <img src={dealImages[deal.product_name]} alt={deal.product_name} className="home-recent-thumb" />
                   : <div className="home-recent-thumb home-recent-thumb-placeholder" style={{ background: 'var(--green-pale)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>
-                      {categoryEmoji(deal.normalized_category)}
+                      {categoryEmoji(deal.product_name)}
                     </div>
                 }
                 <div className="home-deal-name">{deal.product_name}</div>

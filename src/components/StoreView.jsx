@@ -66,7 +66,7 @@ export default function StoreView({ store, onBack }) {
     const today = new Date().toISOString().split('T')[0]
     const { data } = await supabase
       .from('flipp_observations')
-      .select('product_name, price, sale_type, normalized_category')
+      .select('product_name, price, sale_type')
       .eq('store_id', store.id)
       .gt('price', 0)
       .or(`valid_to.is.null,valid_to.gte.${today}`)
@@ -143,7 +143,7 @@ export default function StoreView({ store, onBack }) {
                   {dealImages[deal.product_name]
                     ? <img src={dealImages[deal.product_name]} alt={deal.product_name} className="recent-thumb" />
                     : <div className="recent-thumb recent-thumb-placeholder" style={{ background: 'var(--green-pale)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>
-                        {categoryEmoji(deal.normalized_category)}
+                        {categoryEmoji(deal.product_name)}
                       </div>
                   }
                   <div className="store-deal-name">{deal.product_name}</div>
