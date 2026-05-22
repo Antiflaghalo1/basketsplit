@@ -5,16 +5,28 @@ import { removeSavedItem } from '../data/savedItems'
 function SwipableRow({ item, isSelected, minPrice, pricesLoading, onToggle, onRemove }) {
   const rowRef = useRef(null)
   const startXRef = useRef(0)
+  const startYRef = useRef(0)
   const deltaRef = useRef(0)
+  const longPressRef = useRef(null)
 
   function handleTouchStart(e) {
     startXRef.current = e.touches[0].clientX
+    startYRef.current = e.touches[0].clientY
     deltaRef.current = 0
     if (rowRef.current) rowRef.current.style.transition = 'none'
+    longPressRef.current = setTimeout(() => {
+      const confirmed = window.confirm(`Remove ${item.name} from saved?`)
+      if (confirmed) onRemove()
+    }, 600)
   }
 
   function handleTouchMove(e) {
     const dx = e.touches[0].clientX - startXRef.current
+    const dy = e.touches[0].clientY - startYRef.current
+    if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+      clearTimeout(longPressRef.current)
+      longPressRef.current = null
+    }
     if (dx < -10) {
       const clamped = Math.max(dx, -80)
       deltaRef.current = clamped
@@ -23,6 +35,8 @@ function SwipableRow({ item, isSelected, minPrice, pricesLoading, onToggle, onRe
   }
 
   function handleTouchEnd() {
+    clearTimeout(longPressRef.current)
+    longPressRef.current = null
     if (rowRef.current) rowRef.current.style.transition = 'transform 0.2s ease'
     if (deltaRef.current < -60) {
       const confirmed = window.confirm(`Remove ${item.name} from saved?`)
@@ -155,6 +169,10 @@ export default function SavedItemsView({
           />
         )
       })}
+
+      <p style={{ textAlign: 'center', fontSize: 12, fontStyle: 'italic', color: 'var(--text-muted)', marginTop: 8 }}>
+        Swipe left or hold to remove items
+      </p>
 
       <button
         className={`cta-floating${selectedSavedItems.size > 0 ? ' cta-floating-visible' : ''}`}

@@ -324,9 +324,9 @@ h1 { font-size: 20px; font-weight: 800; }
 .saved-signout-section { padding: 0 20px; }
 .saved-signout-btn { width: 100%; background: none; border: 1.5px solid var(--border); border-radius: 12px; padding: 14px; font-size: 16px; font-weight: 700; color: var(--text-muted); cursor: pointer; }
 .saved-signout-btn:active { background: var(--border); }
-.saved-row-wrap { position: relative; overflow: hidden; }
-.saved-delete-reveal { position: absolute; right: 0; top: 0; bottom: 0; width: 80px; z-index: 0; background: #C62828; display: flex; align-items: center; justify-content: center; color: white; font-size: 13px; font-weight: 600; }
-.saved-row-wrap .item-row { position: relative; z-index: 1; width: 100%; will-change: transform; transform: translateX(0); }
+.saved-row-wrap { position: relative; overflow: hidden; margin-bottom: 5px; }
+.saved-delete-reveal { position: absolute; right: 0; top: 0; bottom: 0; height: 100%; width: 80px; z-index: 0; background: #C62828; display: flex; align-items: center; justify-content: center; color: white; font-size: 13px; font-weight: 600; margin: 0; padding: 0; }
+.saved-row-wrap .item-row { position: relative; z-index: 1; width: 100%; will-change: transform; transform: translateX(0); margin-bottom: 0; }
 
 /* ── Budget full-page view ── */
 @keyframes budgetEntrance {
