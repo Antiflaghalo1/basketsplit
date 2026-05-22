@@ -22,6 +22,12 @@ function freshnessBadge(ts) {
   return { label: '🔴 Stale', cls: 'freshness-stale' }
 }
 
+function formatDate(dateStr) {
+  if (!dateStr) return null
+  const d = new Date(dateStr)
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
 export default function RecentScansView({ onBack, userId }) {
   const [stores, setStores] = useState([])
   const [items, setItems] = useState([])
@@ -95,13 +101,24 @@ export default function RecentScansView({ onBack, userId }) {
       }
 
       const upcs = products.map(p => String(p.upc))
+      const today = new Date().toISOString().split('T')[0]
       let obsQuery = supabase
         .from('observations')
         .select('barcode, price, store_id, created_at')
         .in('barcode', upcs)
         .order('created_at', { ascending: false })
       if (userId) obsQuery = obsQuery.eq('user_id', userId)
-      const { data: obs, error: obsErr } = await obsQuery
+
+      const [{ data: obs, error: obsErr }, { data: flippRows }] = await Promise.all([
+        obsQuery,
+        supabase
+          .from('flipp_observations')
+          .select('barcode, store_id, price, valid_to')
+          .in('barcode', upcs)
+          .gt('price', 0)
+          .or(`valid_to.is.null,valid_to.gte.${today}`)
+          .order('price', { ascending: true }),
+      ])
 
       if (obsErr) throw obsErr
 
@@ -109,6 +126,13 @@ export default function RecentScansView({ onBack, userId }) {
       for (const o of obs || []) {
         if (!obsByUpc[o.barcode]) obsByUpc[o.barcode] = []
         obsByUpc[o.barcode].push(o)
+      }
+
+      const flippBestByUpc = {}
+      for (const row of flippRows || []) {
+        if (!flippBestByUpc[row.barcode]) {
+          flippBestByUpc[row.barcode] = { price: row.price, valid_to: row.valid_to }
+        }
       }
 
       const enriched = products.map(p => {
@@ -119,7 +143,12 @@ export default function RecentScansView({ onBack, userId }) {
           : null
         const top3 = [...validObs].sort((a, b) => a.price - b.price).slice(0, 3)
         const storeCount = new Set(validObs.map(o => o.store_id)).size
-        return { ...p, avgPrice, top3, storeCount }
+        const flippBest = flippBestByUpc[String(p.upc)]
+        const communityLowest = top3[0]?.price
+        const flippSale = (communityLowest != null && flippBest && flippBest.price < communityLowest)
+          ? flippBest
+          : null
+        return { ...p, avgPrice, top3, storeCount, flippSale }
       })
 
       setItems(enriched)
@@ -188,6 +217,14 @@ export default function RecentScansView({ onBack, userId }) {
                         }
                         <span className={`freshness-badge ${badge.cls}`}>{badge.label}</span>
                       </div>
+                      {item.flippSale && (
+                        <div>
+                          <span className="sale-badge">🏷️ Sale: ${item.flippSale.price.toFixed(2)}</span>
+                          {item.flippSale.valid_to && (
+                            <span className="sale-until"> until {formatDate(item.flippSale.valid_to)}</span>
+                          )}
+                        </div>
+                      )}
                       <button className="top3-toggle" onClick={() => togglePrices(item.upc)}>
                         {expandedPrices.has(item.upc) ? '▲ Hide' : '▼ Best prices'}
                       </button>

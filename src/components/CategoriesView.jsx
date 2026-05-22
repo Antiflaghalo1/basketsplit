@@ -23,6 +23,12 @@ function freshnessBadge(ts) {
   return { label: '🔴 Stale', cls: 'freshness-stale' }
 }
 
+function formatDate(dateStr) {
+  if (!dateStr) return null
+  const d = new Date(dateStr)
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
 export default function CategoriesView({ onBack, userId, savedUpcs = new Set(), onItemSaved }) {
   const [stores, setStores] = useState([])
   const [groups, setGroups] = useState([])
@@ -85,15 +91,33 @@ export default function CategoriesView({ onBack, userId, savedUpcs = new Set(), 
     const group = groups.find(g => g.name === groupName)
     if (!group) return
     const upcs = group.products.map(p => String(p.upc))
-    const { data: obs } = await supabase
-      .from('observations')
-      .select('barcode, price, store_id, created_at')
-      .in('barcode', upcs)
+    const today = new Date().toISOString().split('T')[0]
+
+    const [{ data: obs }, { data: flippRows }] = await Promise.all([
+      supabase
+        .from('observations')
+        .select('barcode, price, store_id, created_at')
+        .in('barcode', upcs),
+      supabase
+        .from('flipp_observations')
+        .select('barcode, store_id, price, valid_to')
+        .in('barcode', upcs)
+        .gt('price', 0)
+        .or(`valid_to.is.null,valid_to.gte.${today}`)
+        .order('price', { ascending: true }),
+    ])
 
     const obsByUpc = {}
     for (const o of obs || []) {
       if (!obsByUpc[o.barcode]) obsByUpc[o.barcode] = []
       obsByUpc[o.barcode].push(o)
+    }
+
+    const flippBestByUpc = {}
+    for (const row of flippRows || []) {
+      if (!flippBestByUpc[row.barcode]) {
+        flippBestByUpc[row.barcode] = { price: row.price, valid_to: row.valid_to }
+      }
     }
 
     const map = {}
@@ -105,7 +129,12 @@ export default function CategoriesView({ onBack, userId, savedUpcs = new Set(), 
         : null
       const top3 = [...validObs].sort((a, b) => a.price - b.price).slice(0, 3)
       const storeCount = new Set(validObs.map(o => o.store_id)).size
-      map[upc] = { avgPrice, top3, storeCount }
+      const flippBest = flippBestByUpc[upc]
+      const communityLowest = top3[0]?.price
+      const flippSale = (communityLowest != null && flippBest && flippBest.price < communityLowest)
+        ? flippBest
+        : null
+      map[upc] = { avgPrice, top3, storeCount, flippSale }
     }
     setObsMap(map)
   }
@@ -149,6 +178,14 @@ export default function CategoriesView({ onBack, userId, savedUpcs = new Set(), 
                         }
                         <span className={`freshness-badge ${badge.cls}`}>{badge.label}</span>
                       </div>
+                      {intel.flippSale && (
+                        <div>
+                          <span className="sale-badge">🏷️ Sale: ${intel.flippSale.price.toFixed(2)}</span>
+                          {intel.flippSale.valid_to && (
+                            <span className="sale-until"> until {formatDate(intel.flippSale.valid_to)}</span>
+                          )}
+                        </div>
+                      )}
                       <button className="top3-toggle" onClick={() => togglePrices(item.upc)}>
                         {expandedPrices.has(item.upc) ? '▲ Hide' : '▼ Best prices'}
                       </button>

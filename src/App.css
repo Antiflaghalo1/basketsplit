@@ -120,6 +120,8 @@ h1 { font-size: 20px; font-weight: 800; }
 .result-row:last-child { border-bottom: none; }
 .result-price { font-weight: 700; color: var(--amber); display: flex; align-items: center; gap: 6px; }
 .flipp-sale-pill { font-size: 11px; font-weight: 600; color: #fff; background: #22a65a; border-radius: 10px; padding: 1px 7px; }
+.sale-badge { background: #C8922A; color: #fff; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+.sale-until { font-size: 11px; color: var(--text-muted); }
 
 .disclaimer { margin: 8px 18px 40px; font-size: 12px; color: var(--text-muted); text-align: center; }
 
