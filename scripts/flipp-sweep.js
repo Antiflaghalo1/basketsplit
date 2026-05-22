@@ -1,9 +1,3 @@
-/**
- * BasketSplit — Flipp Circular Scraper
- * Runs weekly via GitHub Actions
- * Writes to flipp_observations table (separate from community observations)
- */
-
 const { createClient } = require('@supabase/supabase-js')
 
 const SUPABASE_URL = process.env.SUPABASE_URL
@@ -16,24 +10,21 @@ if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) {
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SECRET_KEY)
 
-// IE zip codes to cover all store locations
 const ZIP_CODES = ['91710', '91709', '91761']
 
-// Map Flipp merchant names → our store IDs
 const STORE_MAP = {
-  'walmart':                  'walmart',
-  'stater bros':              'stater',
-  'stater bros markets':      'stater',
-  'food 4 less':              'food4less',
-  'aldi':                     'aldi',
-  'sprouts':                  'sprouts',
-  'sprouts farmers market':   'sprouts',
-  'cardenas':                 'cardenas',
-  'cardenas markets':         'cardenas',
-  'northgate':                'northgate',
-  'northgate gonzález':       'northgate',
-  'northgate gonzalez':       'northgate',
-  'target':                   'target',
+  'walmart':                'walmart',
+  'stater bros':            'stater',
+  'stater bros markets':    'stater',
+  'food 4 less':            'food4less',
+  'aldi':                   'aldi',
+  'sprouts':                'sprouts',
+  'sprouts farmers market': 'sprouts',
+  'cardenas':               'cardenas',
+  'cardenas markets':       'cardenas',
+  'northgate':              'northgate',
+  'northgate gonzalez':     'northgate',
+  'target':                 'target',
 }
 
 function generateSid() {
@@ -66,7 +57,6 @@ function resolveStoreId(merchantName) {
 
 function parsePrice(priceStr) {
   if (!priceStr) return null
-  // Handle ranges like "2 for $5.00" — take the unit price
   const match = String(priceStr).match(/[\d.]+/)
   if (!match) return null
   const price = parseFloat(match[0])
@@ -74,57 +64,54 @@ function parsePrice(priceStr) {
 }
 
 async function main() {
-  console.log('🐿️  BasketSplit Flipp Sweep starting...')
-  console.log(`Zip codes: ${ZIP_CODES.join(', ')}`)
+  console.log('BasketSplit Flipp Sweep starting...')
+  console.log('Zip codes: ' + ZIP_CODES.join(', '))
 
-  const seen = new Set() // deduplicate across zip codes
+  const seen = new Set()
   const toInsert = []
 
   for (const zip of ZIP_CODES) {
-    console.log(`\n📍 Fetching flyers for ${zip}...`)
+    console.log('\nFetching flyers for ' + zip + '...')
 
     let flyerData
     try {
       flyerData = await getFlyers(zip)
     } catch (err) {
-      console.warn(`  ⚠️  Could not fetch flyers for ${zip}: ${err.message}`)
+      console.warn('Could not fetch flyers for ' + zip + ': ' + err.message)
       continue
     }
 
-    const flyers = flyerData?.flyers || []
-    console.log(`  Found ${flyers.length} total flyers`)
+    const flyers = flyerData && flyerData.flyers ? flyerData.flyers : []
+    console.log('Found ' + flyers.length + ' total flyers')
 
-    // Filter to known IE stores
     const relevantFlyers = flyers.filter(f => resolveStoreId(f.merchant))
-    console.log(`  ${relevantFlyers.length} match our store list`)
+    console.log(relevantFlyers.length + ' match our store list')
 
     for (const flyer of relevantFlyers) {
       const storeId = resolveStoreId(flyer.merchant)
       const flyerId = flyer.id
 
-      // Skip if already processed this flyer from another zip
       if (seen.has(flyerId)) {
-        console.log(`  ↩️  Skipping duplicate flyer: ${flyer.merchant} (${flyerId})`)
+        console.log('Skipping duplicate flyer: ' + flyer.merchant)
         continue
       }
       seen.add(flyerId)
 
-      console.log(`  🛒 Processing ${flyer.merchant} → store_id: ${storeId}`)
+      console.log('Processing ' + flyer.merchant + ' -> ' + storeId)
 
       let items
       try {
-        // Be polite — small delay between requests
         await new Promise(r => setTimeout(r, 500))
         items = await getFlyerItems(flyerId)
       } catch (err) {
-        console.warn(`    ⚠️  Could not fetch items for ${flyer.merchant}: ${err.message}`)
+        console.warn('Could not fetch items for ' + flyer.merchant + ': ' + err.message)
         continue
       }
 
       let itemCount = 0
       for (const item of items) {
         const price = parsePrice(item.current_price || item.price)
-        const name = item.name?.trim()
+        const name = item.name && item.name.trim()
         if (!name || price === null) continue
 
         toInsert.push({
@@ -140,18 +127,17 @@ async function main() {
         })
         itemCount++
       }
-      console.log(`    ✅ ${itemCount} valid items`)
+      console.log(itemCount + ' valid items')
     }
   }
 
   if (toInsert.length === 0) {
-    console.log('\n⚠️  No items to insert.')
+    console.log('No items to insert.')
     return
   }
 
-  console.log(`\n💾 Writing ${toInsert.length} items to flipp_observations...`)
+  console.log('\nWriting ' + toInsert.length + ' items to flipp_observations...')
 
-  // Clear stale records (valid_to in the past) before inserting fresh ones
   const today = new Date().toISOString().split('T')[0]
   const { error: deleteError } = await supabase
     .from('flipp_observations')
@@ -159,28 +145,27 @@ async function main() {
     .lt('valid_to', today)
 
   if (deleteError) {
-    console.warn('⚠️  Could not clear stale records:', deleteError.message)
+    console.warn('Could not clear stale records:', deleteError.message)
   } else {
-    console.log('🗑️  Stale records cleared')
+    console.log('Stale records cleared')
   }
 
-  // Batch insert in chunks of 500
   const CHUNK = 500
   let inserted = 0
   for (let i = 0; i < toInsert.length; i += CHUNK) {
     const chunk = toInsert.slice(i, i + CHUNK)
     const { error } = await supabase.from('flipp_observations').insert(chunk)
     if (error) {
-      console.error(`❌ Batch insert error (chunk ${i / CHUNK + 1}):`, error.message)
+      console.error('Batch insert error:', error.message)
     } else {
       inserted += chunk.length
     }
   }
 
-  console.log(`\n✅ Sweep complete — ${inserted} items written to flipp_observations`)
+  console.log('Sweep complete - ' + inserted + ' items written to flipp_observations')
 }
 
 main().catch(err => {
-  console.error('💥 Scraper crashed:', err)
+  console.error('Scraper crashed:', err)
   process.exit(1)
 })

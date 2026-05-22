@@ -2,15 +2,13 @@ name: Flipp Circular Sweep
 
 on:
   schedule:
-    # Every Wednesday at 2am UTC (Tuesday 7pm PST) — fresh for the week
     - cron: '0 2 * * 3'
   workflow_dispatch:
-    # Also allows manual trigger from GitHub Actions tab
 
 jobs:
   sweep:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -21,16 +19,13 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: |
-          cd scripts
-          npm init -y
-          npm install @supabase/supabase-js
+        run: npm install @supabase/supabase-js
 
       - name: Run Flipp sweep
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
-        run: node --input-type=module < scripts/flipp-sweep.js
+        run: node scripts/flipp-sweep.js
 
       - name: Log completion
         run: echo "✅ Flipp sweep completed at $(date)"
