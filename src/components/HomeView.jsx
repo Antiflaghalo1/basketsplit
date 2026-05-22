@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react'
 import { MapPin, Clock } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import { STORES } from '../data/stores'
+import { getAllStores } from '../data/storeService'
 
 export default function HomeView({ user, firstName, budget, onBudgetNav, onSeeAll }) {
+  const [stores, setStores] = useState([])
   const [recentProducts, setRecentProducts] = useState([])
   const [loading, setLoading] = useState(true)
 
   const budgetNum = parseFloat(budget) || 0
 
   useEffect(() => {
+    getAllStores().then(setStores)
     loadRecent()
   }, [])
 
@@ -73,7 +75,7 @@ export default function HomeView({ user, firstName, budget, onBudgetNav, onSeeAl
           <div className="home-section-sub">Tap to explore prices</div>
         </div>
         <div className="home-stores-scroll">
-          {STORES.map(store => (
+          {stores.map(store => (
             <div
               key={store.id}
               className="home-store-card"

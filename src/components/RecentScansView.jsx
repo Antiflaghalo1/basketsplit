@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { STORES } from '../data/stores'
+import { getAllStores } from '../data/storeService'
 import { getCustomStores } from '../data/customStores'
 
 function timeAgo(ts) {
@@ -23,12 +23,13 @@ function freshnessBadge(ts) {
 }
 
 export default function RecentScansView({ onBack, userId }) {
+  const [stores, setStores] = useState([])
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [expandedPrices, setExpandedPrices] = useState(new Set())
 
-  const allStores = [...STORES, ...getCustomStores()]
+  const allStores = [...stores, ...getCustomStores()]
 
   function togglePrices(upc) {
     setExpandedPrices(prev => {
@@ -38,6 +39,10 @@ export default function RecentScansView({ onBack, userId }) {
       return next
     })
   }
+
+  useEffect(() => {
+    getAllStores().then(setStores)
+  }, [])
 
   useEffect(() => {
     loadRecent()

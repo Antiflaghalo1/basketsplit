@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Menu, Search, ShoppingCart, Home, LayoutGrid, ScanLine, Heart, User } from 'lucide-react'
 import { ITEMS } from './data/stores'
 import { optimizeBasket } from './utils/optimizer'
+import { optimizeFromSupabase } from './utils/optimizerService'
 import ScanView from './components/ScanView'
 import RecentScansView from './components/RecentScansView'
 import AuthView from './components/AuthView'
@@ -11,14 +12,22 @@ import ProfileView from './components/ProfileView'
 import HamburgerDrawer from './components/HamburgerDrawer'
 import BudgetView from './components/BudgetView'
 import CategoriesView from './components/CategoriesView'
+import SavedItemsView from './components/SavedItemsView'
 import HomeView from './components/HomeView'
 import TutorialOverlay from './components/TutorialOverlay'
 import { supabase } from './lib/supabase'
+import { getSavedItems, saveItem } from './data/savedItems'
+import { getAllStores } from './data/storeService'
 import './App.css'
 
 const CATEGORIES = [...new Set(ITEMS.map(i => i.category))]
 
 export default function App() {
+  const [stores, setStores] = useState([])
+  const [savedItems, setSavedItems] = useState([])
+  const [savedUpcs, setSavedUpcs] = useState(new Set())
+  const [selectedSavedItems, setSelectedSavedItems] = useState(new Set())
+  const [resultSource, setResultSource] = useState('legacy')
   const [selectedItems, setSelectedItems] = useState(new Set())
   const [budget, setBudget] = useState('')
   const [firstName, setFirstName] = useState('')
@@ -49,6 +58,11 @@ export default function App() {
             if (data?.last_name) setLastName(data.last_name)
             if (data?.avatar_url) setAvatarUrl(data.avatar_url)
           })
+        getSavedItems(session.user.id).then(items => {
+          setSavedItems(items)
+          setSavedUpcs(new Set(items.map(i => String(i.upc))))
+        })
+        getAllStores().then(setStores)
       }
     })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -100,6 +114,7 @@ export default function App() {
   const optimize = () => {
     if (selectedItems.size === 0) return
     setResults(optimizeBasket([...selectedItems]))
+    setResultSource('legacy')
     navTo('results')
     setShowNoBudgetBanner(!budget)
   }
@@ -117,6 +132,20 @@ export default function App() {
   async function handleBudgetSave(newValue) {
     setBudget(newValue)
     await supabase.from('profiles').update({ budget: newValue }).eq('id', user.id)
+  }
+
+  function handleSaveItem(product) {
+    const upc = String(product.upc)
+    setSavedItems(prev => [...prev, product])
+    setSavedUpcs(prev => new Set([...prev, upc]))
+  }
+
+  async function handleOptimizeSaved() {
+    const res = await optimizeFromSupabase(Array.from(selectedSavedItems), stores)
+    setResults(res)
+    setResultSource('saved')
+    navTo('results')
+    setShowNoBudgetBanner(!budget)
   }
 
   async function handleSignOut() {
@@ -244,6 +273,11 @@ export default function App() {
               <button className="no-budget-dismiss" onClick={() => setShowNoBudgetBanner(false)}>✕</button>
             </div>
           )}
+          {resultSource === 'saved' && results.unmatched?.length > 0 && (
+            <div className="no-budget-banner">
+              <span>📷 {results.unmatched.length} item{results.unmatched.length !== 1 ? 's' : ''} had no price data yet — scan them to add prices!</span>
+            </div>
+          )}
           <div className="results-top">
             <button className="back-btn" onClick={goBack}>← Edit List</button>
             <div className={`total-card ${overBudget ? 'over' : ''}`}>
@@ -286,9 +320,23 @@ export default function App() {
         </>
       )}
 
-      {view === 'categories' && <CategoriesView onBack={goBack} />}
+      {view === 'categories' && (
+        <CategoriesView
+          onBack={goBack}
+          userId={user?.id}
+          savedUpcs={savedUpcs}
+          onItemSaved={handleSaveItem}
+        />
+      )}
       {view === 'saved' && (
-        <div className="coming-soon-view">Coming soon 🐿️</div>
+        <SavedItemsView
+          savedItems={savedItems}
+          savedUpcs={savedUpcs}
+          selectedSavedItems={selectedSavedItems}
+          setSelectedSavedItems={setSelectedSavedItems}
+          onOptimize={handleOptimizeSaved}
+          onBrowse={() => navTo('categories')}
+        />
       )}
       {view === 'profile' && (
         <ProfileView user={user} firstName={firstName} lastName={lastName} avatarUrl={avatarUrl} onAvatarUpload={handleAvatarUpload} onSignOut={handleSignOut} onMyScans={() => navTo('recent')} />

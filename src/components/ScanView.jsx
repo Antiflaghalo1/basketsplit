@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { BrowserMultiFormatReader } from '@zxing/browser'
 import { DecodeHintType, BarcodeFormat } from '@zxing/library'
-import { STORES } from '../data/stores'
+import { getAllStores } from '../data/storeService'
 import { PRODUCTS } from '../data/products'
 import { addObservation, upsertProduct } from '../data/observations'
 import { getCustomStores, addCustomStore } from '../data/customStores'
@@ -47,6 +47,9 @@ export default function ScanView({ onBack, user }) {
   const shelfVideoRef = useRef(null)
   const shelfStreamRef = useRef(null)
 
+  const [stores, setStores] = useState([])
+  const storesRef = useRef([])
+
   const [scanKey, setScanKey] = useState(0)
   const [phase, setPhase] = useState('scanning')
   const [barcode, setBarcode] = useState('')
@@ -55,7 +58,7 @@ export default function ScanView({ onBack, user }) {
   const [price, setPrice] = useState('')
   const [priceError, setPriceError] = useState('')
   const [storeId, setStoreId] = useState(
-    localStorage.getItem('basketsplit_last_store') || STORES[0].id
+    localStorage.getItem('basketsplit_last_store') || ''
   )
   const [errorMsg, setErrorMsg] = useState('')
   const [customStores, setCustomStores] = useState(() => getCustomStores())
@@ -79,6 +82,15 @@ export default function ScanView({ onBack, user }) {
   const [photoBlob, setPhotoBlob] = useState(null)
   const [photoCapturing, setPhotoCapturing] = useState(false)
 
+  // Load stores from Supabase
+  useEffect(() => {
+    getAllStores().then(data => {
+      setStores(data)
+      storesRef.current = data
+      setStoreId(prev => prev || data[0]?.id || '')
+    })
+  }, [])
+
   // GPS — runs once on mount
   useEffect(() => {
     if (!navigator.geolocation) return
@@ -96,7 +108,7 @@ export default function ScanView({ onBack, user }) {
           }
         }
         if (closestId && minDist <= GPS_RADIUS_M) {
-          const allStores = [...STORES, ...getCustomStores()]
+          const allStores = [...storesRef.current, ...getCustomStores()]
           const match = allStores.find(s => s.id === closestId)
           if (match) {
             setStoreId(closestId)
@@ -309,7 +321,7 @@ export default function ScanView({ onBack, user }) {
       setAddError('Store name and city are required.')
       return
     }
-    const allIds = new Set([...STORES, ...customStores].map(s => s.id))
+    const allIds = new Set([...stores, ...customStores].map(s => s.id))
     let base = slugify(newName.trim()) || 'store_' + Date.now()
     let id = base
     let n = 2
@@ -380,7 +392,7 @@ export default function ScanView({ onBack, user }) {
     setPriceError('')
     setLookingUp(false)
     setExistingPrices([])
-    setStoreId(localStorage.getItem('basketsplit_last_store') || STORES[0].id)
+    setStoreId(localStorage.getItem('basketsplit_last_store') || stores[0]?.id || '')
     setShowAddStore(false)
     setSavedFlash(false)
     setPhotoCapturing(false)
@@ -388,7 +400,7 @@ export default function ScanView({ onBack, user }) {
     setScanKey(k => k + 1)
   }
 
-  const allStores = [...STORES, ...customStores]
+  const allStores = [...stores, ...customStores]
   const savedStore = allStores.find(s => s.id === storeId)
 
   return (
@@ -459,7 +471,7 @@ export default function ScanView({ onBack, user }) {
             value={storeId}
             onChange={e => { setStoreId(e.target.value); setSavedFlash(false) }}
           >
-            {STORES.map(s => (
+            {stores.map(s => (
               <option key={s.id} value={s.id}>{s.name} – {s.location}</option>
             ))}
             {customStores.length > 0 && (

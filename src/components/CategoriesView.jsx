@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { STORES } from '../data/stores'
+import { getAllStores } from '../data/storeService'
 import { getCustomStores } from '../data/customStores'
+import { saveItem } from '../data/savedItems'
 
 function timeAgo(ts) {
   const diff = Date.now() - new Date(ts).getTime()
@@ -22,14 +23,15 @@ function freshnessBadge(ts) {
   return { label: '🔴 Stale', cls: 'freshness-stale' }
 }
 
-export default function CategoriesView({ onBack }) {
+export default function CategoriesView({ onBack, userId, savedUpcs = new Set(), onItemSaved }) {
+  const [stores, setStores] = useState([])
   const [groups, setGroups] = useState([])
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState(null)
   const [obsMap, setObsMap] = useState({})
   const [expandedPrices, setExpandedPrices] = useState(new Set())
 
-  const allStores = [...STORES, ...getCustomStores()]
+  const allStores = [...stores, ...getCustomStores()]
 
   function togglePrices(upc) {
     setExpandedPrices(prev => {
@@ -41,6 +43,7 @@ export default function CategoriesView({ onBack }) {
   }
 
   useEffect(() => {
+    getAllStores().then(setStores)
     load()
   }, [])
 
@@ -163,6 +166,20 @@ export default function CategoriesView({ onBack }) {
                       )}
                     </div>
                   )}
+                  <div className="saved-action-row">
+                    <button
+                      className="save-heart-btn"
+                      style={savedUpcs.has(String(item.upc)) ? { color: 'var(--green)' } : {}}
+                      onClick={() => {
+                        if (!savedUpcs.has(String(item.upc))) {
+                          saveItem(userId, item)
+                          onItemSaved?.(item)
+                        }
+                      }}
+                    >
+                      {savedUpcs.has(String(item.upc)) ? '♥ Saved' : '♡ Save'}
+                    </button>
+                  </div>
                 </div>
               </div>
             )
