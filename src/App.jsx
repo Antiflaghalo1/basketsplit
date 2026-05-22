@@ -21,6 +21,9 @@ const CATEGORIES = [...new Set(ITEMS.map(i => i.category))]
 export default function App() {
   const [selectedItems, setSelectedItems] = useState(new Set())
   const [budget, setBudget] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [avatarUrl, setAvatarUrl] = useState(null)
   const [results, setResults] = useState(null)
   const [view, setView] = useState('home')
   const [showNoBudgetBanner, setShowNoBudgetBanner] = useState(false)
@@ -39,8 +42,13 @@ export default function App() {
       setUser(session?.user ?? null)
       setAuthLoading(false)
       if (session?.user) {
-        supabase.from('profiles').select('budget').eq('id', session.user.id).single()
-          .then(({ data }) => { if (data?.budget != null) setBudget(data.budget) })
+        supabase.from('profiles').select('budget, first_name, last_name, avatar_url').eq('id', session.user.id).single()
+          .then(({ data }) => {
+            if (data?.budget != null) setBudget(data.budget)
+            if (data?.first_name) setFirstName(data.first_name)
+            if (data?.last_name) setLastName(data.last_name)
+            if (data?.avatar_url) setAvatarUrl(data.avatar_url)
+          })
       }
     })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -94,6 +102,16 @@ export default function App() {
     setResults(optimizeBasket([...selectedItems]))
     navTo('results')
     setShowNoBudgetBanner(!budget)
+  }
+
+  async function handleAvatarUpload(file) {
+    const { error: uploadError } = await supabase.storage.from('avatars').upload(
+      user.id + '.jpg', file, { upsert: true, contentType: file.type }
+    )
+    if (uploadError) throw uploadError
+    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(user.id + '.jpg')
+    await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id)
+    setAvatarUrl(publicUrl)
   }
 
   async function handleBudgetSave(newValue) {
@@ -159,6 +177,12 @@ export default function App() {
                 <span className="topbar-cart-badge">{selectedItems.size}</span>
               )}
             </div>
+            <button className="user-avatar-btn" onClick={() => navTo('profile')}>
+              {avatarUrl
+                ? <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : userInitial
+              }
+            </button>
           </div>
         </div>
       </header>
@@ -166,6 +190,7 @@ export default function App() {
       {view === 'home' && (
         <HomeView
           user={user}
+          firstName={firstName}
           budget={budget}
           onBudgetNav={() => navTo('budget')}
           onSeeAll={() => navTo('recent')}
@@ -266,7 +291,7 @@ export default function App() {
         <div className="coming-soon-view">Coming soon 🐿️</div>
       )}
       {view === 'profile' && (
-        <ProfileView user={user} onSignOut={handleSignOut} onMyScans={() => navTo('recent')} />
+        <ProfileView user={user} firstName={firstName} lastName={lastName} avatarUrl={avatarUrl} onAvatarUpload={handleAvatarUpload} onSignOut={handleSignOut} onMyScans={() => navTo('recent')} />
       )}
       {view === 'budget' && (
         <BudgetView user={user} budget={budget} onBack={goBack} onBudgetSave={handleBudgetSave} />
@@ -275,6 +300,8 @@ export default function App() {
       {showProfileMenu && user && (
         <ProfileMenu
           user={user}
+          firstName={firstName}
+          lastName={lastName}
           onSignOut={handleSignOut}
           onClose={() => setShowProfileMenu(false)}
         />

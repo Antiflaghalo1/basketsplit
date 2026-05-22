@@ -3,6 +3,8 @@ import { supabase } from '../lib/supabase'
 
 export default function AuthView({ onBack, gated = false, onLegal }) {
   const [mode, setMode] = useState('signin') // signin | signup
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -25,9 +27,19 @@ export default function AuthView({ onBack, gated = false, onLegal }) {
       if (err) setError(err.message)
       else onBack()
     } else {
-      const { error: err } = await supabase.auth.signUp({ email, password })
-      if (err) setError(err.message)
-      else setSuccess("Check your email to confirm your account, then sign in.")
+      const { data, error: err } = await supabase.auth.signUp({ email, password })
+      if (err) {
+        setError(err.message)
+      } else {
+        if (data?.user) {
+          await supabase.from('profiles').upsert({
+            id: data.user.id,
+            first_name: firstName.trim() || null,
+            last_name: lastName.trim() || null,
+          })
+        }
+        setSuccess("Check your email to confirm your account, then sign in.")
+      }
     }
     setLoading(false)
   }
@@ -45,7 +57,28 @@ export default function AuthView({ onBack, gated = false, onLegal }) {
           : 'Join BasketSplit to submit prices and help your community save money.'}
       </p>
 
-      <label className="scan-label">Email</label>
+      {mode === 'signup' && (
+        <>
+          <label className="scan-label">First Name</label>
+          <input
+            className="scan-input"
+            type="text"
+            placeholder="Optional"
+            value={firstName}
+            onChange={e => setFirstName(e.target.value)}
+          />
+          <label className="scan-label" style={{ marginTop: 14 }}>Last Name</label>
+          <input
+            className="scan-input"
+            type="text"
+            placeholder="Optional"
+            value={lastName}
+            onChange={e => setLastName(e.target.value)}
+          />
+          <label className="scan-label" style={{ marginTop: 14 }}>Email</label>
+        </>
+      )}
+      {mode === 'signin' && <label className="scan-label">Email</label>}
       <input
         className="scan-input"
         type="email"

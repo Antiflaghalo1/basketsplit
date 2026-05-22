@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
+import { MapPin, Clock } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { STORES } from '../data/stores'
 
-export default function HomeView({ user, budget, onBudgetNav, onSeeAll }) {
+export default function HomeView({ user, firstName, budget, onBudgetNav, onSeeAll }) {
   const [recentProducts, setRecentProducts] = useState([])
   const [loading, setLoading] = useState(true)
 
-  const userName = user?.email?.split('@')[0] || 'there'
   const budgetNum = parseFloat(budget) || 0
 
   useEffect(() => {
@@ -56,7 +56,7 @@ export default function HomeView({ user, budget, onBudgetNav, onSeeAll }) {
     <div className="home-view">
       {/* Section 1 — Greeting */}
       <div className="home-greeting-section">
-        <div className="home-greeting">Hey {userName} 👋</div>
+        <div className="home-greeting">{firstName ? `Hey ${firstName} 👋` : 'Hey there 👋'}</div>
         {budgetNum > 0 ? (
           <div className="home-budget-pill">💰 ${budgetNum}/week</div>
         ) : (
@@ -69,7 +69,7 @@ export default function HomeView({ user, budget, onBudgetNav, onSeeAll }) {
       {/* Section 2 — Stores Near You */}
       <div className="home-section">
         <div className="home-section-header">
-          <div className="home-section-title">📍 Stores Near You</div>
+          <div className="home-section-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><MapPin size={16} color="var(--green)" /> Stores Near You</div>
           <div className="home-section-sub">Tap to explore prices</div>
         </div>
         <div className="home-stores-scroll">
@@ -90,7 +90,7 @@ export default function HomeView({ user, budget, onBudgetNav, onSeeAll }) {
       {/* Section 3 — Recently Scanned */}
       <div className="home-section">
         <div className="home-section-header-row">
-          <div className="home-section-title">🕐 Recently Scanned</div>
+          <div className="home-section-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Clock size={16} color="var(--green)" /> Recently Scanned</div>
           <button className="home-see-all" onClick={onSeeAll}>See all →</button>
         </div>
         {loading ? (

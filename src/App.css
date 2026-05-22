@@ -195,7 +195,7 @@ h1 { font-size: 20px; font-weight: 800; }
 .header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
 .sign-in-btn { background: rgba(255,255,255,.18); color: white; border: 1.5px solid rgba(255,255,255,.5); border-radius: 20px; padding: 6px 14px; font-size: 13px; font-weight: 700; cursor: pointer; }
 .sign-in-btn:active { background: rgba(255,255,255,.3); }
-.user-avatar-btn { width: 32px; height: 32px; border-radius: 50%; background: white; color: var(--green); font-size: 14px; font-weight: 900; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.user-avatar-btn { width: 32px; height: 32px; border-radius: 50%; background: white; color: var(--green); font-size: 14px; font-weight: 900; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 0; }
 
 /* Profile bottom sheet */
 .profile-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 200; display: flex; flex-direction: column; justify-content: flex-end; }
@@ -260,6 +260,10 @@ h1 { font-size: 20px; font-weight: 800; }
 .profile-view { padding: 28px 20px 40px; display: flex; flex-direction: column; align-items: center; gap: 0; }
 .profile-view-email { font-size: 15px; color: var(--text-muted); font-weight: 600; text-align: center; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border); width: 100%; }
 .profile-view-signout { width: 100%; margin-top: 12px; }
+.avatar-circle { width: 80px; height: 80px; border-radius: 50%; background: var(--green); color: white; font-size: 32px; font-weight: 900; display: flex; align-items: center; justify-content: center; overflow: hidden; margin: 0 auto 8px; flex-shrink: 0; }
+.avatar-circle img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
+.avatar-change-btn { background: none; border: none; color: var(--text-muted); font-size: 13px; cursor: pointer; text-decoration: underline; padding: 0; margin: 0 auto 20px; display: block; }
+.avatar-change-btn:disabled { opacity: 0.6; cursor: default; }
 
 /* ── Hamburger drawer ── */
 .drawer-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 300; pointer-events: none; opacity: 0; transition: opacity .25s ease; }
@@ -274,9 +278,10 @@ h1 { font-size: 20px; font-weight: 800; }
 .drawer-section-label { font-size: 15px; font-weight: 600; color: var(--text); white-space: nowrap; }
 .drawer-section .budget-wrap { font-size: 17px; font-weight: 700; }
 .drawer-section .budget-wrap input { font-size: 17px; font-weight: 700; width: 80px; }
-.drawer-menu-row { width: 100%; background: none; border: none; text-align: left; padding: 16px 20px; font-size: 15px; font-weight: 600; color: var(--text); cursor: pointer; border-bottom: 1px solid var(--border); }
+.drawer-menu-row { width: 100%; background: none; border: none; text-align: left; padding: 16px 20px; font-size: 15px; font-weight: 600; color: var(--text); cursor: pointer; border-bottom: 1px solid var(--border); display: flex; align-items: center; }
 .drawer-menu-row:active { background: var(--green-pale); }
-.drawer-signout-row { color: var(--text-muted); border-bottom: none; }
+.drawer-signout-row { color: #C62828; border-bottom: none; }
+.drawer-row-icon { display: inline-flex; align-items: center; margin-right: 10px; flex-shrink: 0; }
 
 /* ── Saved / Money Hub view ── */
 .saved-view { padding: 0 0 40px; }
