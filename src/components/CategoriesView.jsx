@@ -112,7 +112,7 @@ export default function CategoriesView({ onBack, userId, savedUpcs = new Set(), 
       if (!groupMap[key].thumbnail && p.image_url) groupMap[key].thumbnail = p.image_url
     }
 
-    setGroups(Object.values(groupMap))
+    setGroups(Object.values(groupMap).sort((a, b) => a.name.localeCompare(b.name)))
     setLoading(false)
   }
 
