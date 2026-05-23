@@ -19,6 +19,7 @@ import StoreView from './components/StoreView'
 import EditProfileView from './components/EditProfileView'
 import TutorialOverlay from './components/TutorialOverlay'
 import AIAssistantView from './components/AIAssistantView'
+import ShoppingModeView from './components/ShoppingModeView'
 import { supabase } from './lib/supabase'
 import { getSavedItems, saveItem } from './data/savedItems'
 import { getAllStores } from './data/storeService'
@@ -47,6 +48,8 @@ export default function App() {
   const [showTutorial, setShowTutorial] = useState(!localStorage.getItem('bs_tutorial_seen'))
   const [selectedStore, setSelectedStore] = useState(null)
   const [aiContext, setAiContext] = useState(null)
+  const [shoppingStore, setShoppingStore] = useState(null)
+  const [shoppingItems, setShoppingItems] = useState([])
   const viewStack = useRef([])
   const userRef = useRef(null)
 
@@ -419,6 +422,18 @@ export default function App() {
                   </div>
                 ))}
               </div>
+              <div style={{ padding: '10px 14px 14px' }}>
+                <button
+                  className="cta-btn"
+                  onClick={() => {
+                    setShoppingStore(store)
+                    setShoppingItems(items.map(item => ({ ...item, prices: { [store.id]: item.bestPrice } })))
+                    navTo('shopping')
+                  }}
+                >
+                  Start Shopping at {store.name}
+                </button>
+              </div>
             </div>
           ))}
 
@@ -459,6 +474,9 @@ export default function App() {
       {view === 'ai' && (
         <AIAssistantView aiContext={aiContext} onBack={goBack} user={user} />
       )}
+      {view === 'shopping' && (
+        <ShoppingModeView store={shoppingStore} items={shoppingItems} user={user} onBack={goBack} />
+      )}
 
       {showProfileMenu && user && (
         <ProfileMenu
@@ -494,7 +512,7 @@ export default function App() {
         }} />
       )}
 
-      {view !== 'scan' && view !== 'auth' && view !== 'tos' && view !== 'privacy' && (
+      {view !== 'scan' && view !== 'auth' && view !== 'tos' && view !== 'privacy' && view !== 'shopping' && (
         <nav className="bottom-nav">
           <button className={`bottom-nav-tab${view === 'home' ? ' active' : ''}`} onClick={() => navTo('home')}>
             <Home size={22} />
