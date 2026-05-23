@@ -26,7 +26,7 @@ ${aiContext.savedItems.map(item =>
     : '   no price data yet — needs scanning')
 ).join('\n')}
 
-This week's Flipp circular deals at local stores:
+This week's deals curated by BasketSplit at local stores:
 ${aiContext.weeklyDeals.map(d => `${d.productName} at ${d.storeName}: $${d.price}`).join('\n')}
 
 Local stores the user shops at:
@@ -52,7 +52,7 @@ STRICT RULES — follow these without exception:
 - Be warm, direct, and specific. Lead with the answer.
 - Never make up prices — only use what's listed above.
 - If asked about an item not in the saved list or
-  Flipp deals, say you don't have price data and
+  this week's deals, say you don't have price data and
   suggest they scan it in the app.
 - When suggesting substitutions, always give a
   specific price and store.` : ''
