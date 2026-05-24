@@ -157,7 +157,6 @@ export default function ScanView({ onBack, user }) {
       { facingMode: 'environment' },
       {
         fps: 15,
-        qrbox: { width: 260, height: 160 },
         aspectRatio: 1.777,
         disableFlip: false,
         formatsToSupport: [
