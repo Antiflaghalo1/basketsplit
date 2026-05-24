@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { BrowserMultiFormatReader } from '@zxing/browser'
-import { DecodeHintType, BarcodeFormat } from '@zxing/library'
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode'
 import { getAllStores } from '../data/storeService'
 import { PRODUCTS } from '../data/products'
 import { addObservation, upsertProduct } from '../data/observations'
@@ -55,15 +54,13 @@ function timeAgo(ts) {
 }
 
 export default function ScanView({ onBack, user }) {
-  const videoRef = useRef(null)
-  const controlsRef = useRef(null)
+  const html5QrRef = useRef(null)
   const shelfVideoRef = useRef(null)
   const shelfStreamRef = useRef(null)
 
   const [stores, setStores] = useState([])
   const storesRef = useRef([])
 
-  const [scanKey, setScanKey] = useState(0)
   const [phase, setPhase] = useState('scanning')
   const [barcode, setBarcode] = useState('')
   const [productName, setProductName] = useState('')
@@ -141,47 +138,54 @@ export default function ScanView({ onBack, user }) {
     )
   }, [])
 
+  async function stopScanner() {
+    if (html5QrRef.current) {
+      try {
+        await html5QrRef.current.stop()
+        html5QrRef.current.clear()
+      } catch (e) {}
+      html5QrRef.current = null
+    }
+  }
+
   // Barcode scanner
   useEffect(() => {
-    let cancelled = false
-    const timer = setTimeout(() => {
-      const hints = new Map()
-      hints.set(DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.UPC_A, BarcodeFormat.EAN_13])
-      const reader = new BrowserMultiFormatReader(hints)
-      reader
-        .decodeFromConstraints(
-          { video: { facingMode: 'environment' } },
-          videoRef.current,
-          (result, _err, controls) => {
-            if (cancelled || !result) return
-            cancelled = true
-            controls.stop()
-            controlsRef.current = null
-            const code = result.getText()
-            setBarcode(code)
-            setPhase('found')
-            lookUpProduct(code)
-            fetchExistingPrices(code)
-          }
-        )
-        .then(controls => {
-          if (cancelled) controls.stop()
-          else controlsRef.current = controls
-        })
-        .catch(err => {
-          if (!cancelled) {
-            setPhase('error')
-            setErrorMsg(err?.message || 'Camera access denied')
-          }
-        })
-    }, 300)
-    return () => {
-      cancelled = true
-      clearTimeout(timer)
-      controlsRef.current?.stop()
-      controlsRef.current = null
-    }
-  }, [scanKey])
+    if (phase !== 'scanning') return
+    const html5Qr = new Html5Qrcode('squrry-scanner-region')
+    html5QrRef.current = html5Qr
+    html5Qr.start(
+      { facingMode: 'environment' },
+      {
+        fps: 15,
+        qrbox: { width: 260, height: 160 },
+        aspectRatio: 1.777,
+        disableFlip: false,
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.EAN_8,
+          Html5QrcodeSupportedFormats.UPC_A,
+          Html5QrcodeSupportedFormats.UPC_E,
+          Html5QrcodeSupportedFormats.CODE_128,
+          Html5QrcodeSupportedFormats.CODE_39,
+        ],
+      },
+      (decodedText) => {
+        if (phase !== 'scanning') return
+        stopScanner()
+        setBarcode(decodedText)
+        setPhase('found')
+        lookUpProduct(decodedText)
+        fetchExistingPrices(decodedText)
+      },
+      (_errorMessage) => {
+        // Scan attempt failure — fires constantly while searching for a barcode
+      }
+    ).catch(err => {
+      setPhase('error')
+      setErrorMsg(err?.message || 'Camera access denied')
+    })
+    return () => { stopScanner() }
+  }, [phase])
 
   // Stop shelf camera on unmount
   useEffect(() => {
@@ -430,8 +434,8 @@ export default function ScanView({ onBack, user }) {
     setLastObservation(null)
     setSelectedCategory('')
     setShowReportModal(false)
+    stopScanner()
     setPhase('scanning')
-    setScanKey(k => k + 1)
   }
 
   const allStores = [...stores, ...customStores]
@@ -443,7 +447,10 @@ export default function ScanView({ onBack, user }) {
       {/* ── SCANNING ── */}
       {phase === 'scanning' && (
         <div className="scan-camera-wrap">
-          <video ref={videoRef} className="scan-video" playsInline muted autoPlay />
+          <div
+            id="squrry-scanner-region"
+            style={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }}
+          />
           <div className="scan-overlay">
             <div className="scan-frame-box">
               <div className="scan-corner-tl" />
