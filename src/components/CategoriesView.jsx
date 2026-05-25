@@ -7,18 +7,19 @@ import { saveItem, removeSavedItem } from '../data/savedItems'
 import ReportModal from './ReportModal'
 
 const CAT_META = {
-  'Dairy & Eggs':          { emoji: '🥛', bg: '#E1F5EE', dot: '#1D9E75' },
   'Meat & Seafood':        { emoji: '🥩', bg: '#FAECE7', dot: '#D85A30' },
-  'Produce':               { emoji: '🥦', bg: '#EAF3DE', dot: '#639922' },
+  'Dairy & Eggs':          { emoji: '🥛', bg: '#E1F5EE', dot: '#1D9E75' },
+  'Produce':               { emoji: '🥬', bg: '#EAF3DE', dot: '#639922' },
   'Bakery & Bread':        { emoji: '🥖', bg: '#FAEEDA', dot: '#BA7517' },
-  'Snacks & Candy':        { emoji: '🍿', bg: '#FBEAF0', dot: '#D4537E' },
-  'Beverages':             { emoji: '🧃', bg: '#E6F1FB', dot: '#378ADD' },
-  'Health & Beauty':       { emoji: '💊', bg: '#EEEDFE', dot: '#7F77DD' },
-  'Household & Cleaning':  { emoji: '🧹', bg: '#F1EFE8', dot: '#888780' },
-  'Baby & Kids':           { emoji: '🍼', bg: '#FBEAF0', dot: '#D4537E' },
-  'Breakfast & Cereal':    { emoji: '🥣', bg: '#FAEEDA', dot: '#BA7517' },
-  'Frozen Foods':          { emoji: '🧊', bg: '#E6F1FB', dot: '#378ADD' },
   'Pantry & Canned':       { emoji: '🥫', bg: '#FAECE7', dot: '#D85A30' },
+  'Frozen':                { emoji: '🧊', bg: '#E6F1FB', dot: '#378ADD' },
+  'Beverages':             { emoji: '🥤', bg: '#E6F1FB', dot: '#378ADD' },
+  'Snacks & Candy':        { emoji: '🍿', bg: '#FBEAF0', dot: '#D4537E' },
+  'Pet Care':              { emoji: '🐾', bg: '#F5F0E8', dot: '#8B6914' },
+  'Health & Beauty':       { emoji: '🧴', bg: '#EEEDFE', dot: '#7F77DD' },
+  'Household & Cleaning':  { emoji: '🧹', bg: '#F1EFE8', dot: '#888780' },
+  'Baby & Kids':           { emoji: '👶', bg: '#FBEAF0', dot: '#D4537E' },
+  'Deli & Prepared':       { emoji: '🥗', bg: '#FFF3E0', dot: '#E67E22' },
   'Miscellaneous':         { emoji: '🛒', bg: '#F1EFE8', dot: '#888780' },
 }
 
