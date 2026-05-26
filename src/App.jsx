@@ -322,6 +322,26 @@ export default function App() {
     setShowNoBudgetBanner(!budget)
   }
 
+  async function handleRemoveFromTrip(upc) {
+    if (!user?.id) return
+    await supabase.from('saved_items').delete()
+      .eq('user_id', user.id)
+      .eq('upc', upc)
+    handleRemoveItem(upc)
+    setSavedItemsCount(prev => Math.max(0, prev - 1))
+    const remainingUpcs = results.storeBreakdown
+      .flatMap(b => b.items.map(i => i.id))
+      .filter(id => id !== upc)
+    if (remainingUpcs.length === 0) {
+      setResults(null)
+      navTo('saved')
+      return
+    }
+    const stores = await getAllStores()
+    const newResults = await optimizeFromSupabase(remainingUpcs, stores)
+    setResults(newResults)
+  }
+
   async function handleOptimizeSaved() {
     const res = await optimizeFromSupabase(Array.from(selectedSavedItems), stores)
     setResults(res)
@@ -471,7 +491,7 @@ export default function App() {
             </div>
           )}
           <div className="results-top">
-            <button className="back-btn" onClick={goBack}>← Edit List</button>
+            <button className="back-btn" onClick={() => navTo('saved')}>← Edit List</button>
             <div className={`total-card ${overBudget ? 'over' : ''}`}>
               <div className="total-label">Total Across All Stores</div>
               <div className="total-amount">${results.grandTotal.toFixed(2)}</div>
@@ -523,6 +543,12 @@ export default function App() {
                         <span className="flipp-sale-pill">🏷️ On sale</span>
                       )}
                     </span>
+                    <button
+                      onClick={() => handleRemoveFromTrip(item.id)}
+                      style={{ background: 'none', border: 'none', color: 'var(--text-muted)',
+                        fontSize: 16, cursor: 'pointer', padding: '0 4px', lineHeight: 1 }}
+                      aria-label="Remove item"
+                    >✕</button>
                   </div>
                 ))}
               </div>
