@@ -402,7 +402,7 @@ export default function App() {
             <Menu size={22} />
           </button>
           <div className="topbar-wordmark">
-            <img src="/squrry-logo.png" alt="Squrry" style={{ height: 150, width: 'auto' }} />
+            <img src="/squrry-logo.png" alt="Squrry" style={{ height: 48, width: 'auto' }} />
           </div>
           <div className="topbar-actions">
             {queueCount > 0 && (

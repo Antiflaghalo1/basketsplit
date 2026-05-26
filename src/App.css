@@ -259,7 +259,7 @@ h1 { font-size: 17px; font-weight: 800; color: var(--text); }
 .recent-when { font-size: 11px; color: var(--text-muted); }
 
 /* ── Top bar (new header layout) ── */
-.topbar { min-height: 170px; }
+.topbar {}
 .topbar-inner { display: flex; align-items: center; position: relative; }
 .topbar-wordmark { position: absolute; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 6px; font-size: 17px; font-weight: 800; color: var(--text); white-space: nowrap; pointer-events: none; }
 .topbar-wordmark-emoji { font-size: 20px; }
