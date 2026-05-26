@@ -103,9 +103,8 @@ export default function ScanView({ onBack, user }) {
   const [torchOn, setTorchOn] = useState(false)
   const [torchSupported, setTorchSupported] = useState(false)
   const [detectedStore, setDetectedStore] = useState(null)
-  const detectedStoreRef = useRef(null)
-  useEffect(() => { detectedStoreRef.current = detectedStore }, [detectedStore])
   const watchIdRef = useRef(null)
+  const detectedStoreRef = useRef(null)
 
   function runGpsDetection() {
     if (!navigator.geolocation) return
@@ -135,6 +134,7 @@ export default function ScanView({ onBack, user }) {
               setGpsStoreName(match.name)
               setGpsStatus('detected')
               setDetectedStore(match)
+              detectedStoreRef.current = match
             }
             return
           }
