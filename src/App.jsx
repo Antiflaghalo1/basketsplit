@@ -535,7 +535,7 @@ export default function App() {
               </div>
               <div className="store-items">
                 {items.map(item => (
-                  <div key={item.id} className="result-row">
+                  <div key={item.id} className="result-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                     <span>{item.name}</span>
                     <span className="result-price">
                       ${item.bestPrice.toFixed(2)}
