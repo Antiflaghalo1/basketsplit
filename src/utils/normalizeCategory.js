@@ -39,7 +39,6 @@ const RULES = [
     'beverage', 'drink', 'juice', 'water', 'soda', 'coffee', 'tea',
     'energy drink', 'sports drink', 'beer', 'wine', 'sparkling',
     'lemonade', 'cola', 'gatorade', 'powerade', 'arizona', 'poppi',
-    'plant-based foods', 'plant based foods',
   ]],
   ['Snacks & Candy', [
     'snack', 'chip', 'cracker', 'pretzel', 'popcorn', 'nut', 'almond',
@@ -73,6 +72,11 @@ const RULES = [
   ]],
 ]
 
+const GENERIC_RAW_CATEGORIES = new Set([
+  'plant-based foods and beverages',
+  'plant based foods and beverages',
+])
+
 function matchKeywords(str) {
   for (const [category, keywords] of RULES) {
     for (const kw of keywords) {
@@ -85,7 +89,8 @@ function matchKeywords(str) {
 export default function normalizeCategory(rawCategory, name = '') {
   // Try raw_category first
   if (rawCategory && rawCategory !== 'Miscellaneous' &&
-      rawCategory.toLowerCase() !== 'undefined') {
+      rawCategory.toLowerCase() !== 'undefined' &&
+      !GENERIC_RAW_CATEGORIES.has(rawCategory.toLowerCase().trim())) {
 
     let cleaned = rawCategory.toLowerCase().trim()
 
