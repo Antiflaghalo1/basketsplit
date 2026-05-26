@@ -9,7 +9,7 @@ import ReportModal from './ReportModal'
 import normalizeCategory from '../utils/normalizeCategory'
 
 const WEBHOOK_URL = import.meta.env.VITE_WEBHOOK_URL
-const GPS_RADIUS_M = 750
+const GPS_RADIUS_M = 500
 
 // Approximate coords — fine-tune per Google Maps if needed
 const STORE_COORDS = {
@@ -113,35 +113,44 @@ export default function ScanView({ onBack, user }) {
       navigator.geolocation.clearWatch(watchIdRef.current)
     }
     setGpsStatus('detecting')
+
+    function handlePosition(pos) {
+      const { latitude, longitude } = pos.coords
+      setGpsCoords({ lat: latitude, lng: longitude })
+      let closestId = null
+      let minDist = Infinity
+      for (const store of storesRef.current) {
+        const dist = haversine(latitude, longitude, store.lat, store.lng)
+        if (dist < minDist) {
+          minDist = dist
+          closestId = store.id
+        }
+      }
+      if (closestId && minDist <= GPS_RADIUS_M) {
+        const allStores = [...storesRef.current, ...getCustomStores()]
+        const match = allStores.find(s => s.id === closestId)
+        if (match) {
+          if (detectedStoreRef.current?.id !== closestId) {
+            setStoreId(closestId)
+            setGpsStoreName(match.name)
+            setGpsStatus('detected')
+            setDetectedStore(match)
+            detectedStoreRef.current = match
+          }
+          return
+        }
+      }
+      setGpsStatus('failed')
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      handlePosition,
+      () => setGpsStatus('failed'),
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 30000 }
+    )
+
     watchIdRef.current = navigator.geolocation.watchPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords
-        setGpsCoords({ lat: latitude, lng: longitude })
-        let closestId = null
-        let minDist = Infinity
-        for (const store of storesRef.current) {
-          const dist = haversine(latitude, longitude, store.lat, store.lng)
-          if (dist < minDist) {
-            minDist = dist
-            closestId = store.id
-          }
-        }
-        if (closestId && minDist <= GPS_RADIUS_M) {
-          const allStores = [...storesRef.current, ...getCustomStores()]
-          const match = allStores.find(s => s.id === closestId)
-          if (match) {
-            if (detectedStoreRef.current?.id !== closestId) {
-              setStoreId(closestId)
-              setGpsStoreName(match.name)
-              setGpsStatus('detected')
-              setDetectedStore(match)
-              detectedStoreRef.current = match
-            }
-            return
-          }
-        }
-        setGpsStatus('failed')
-      },
+      handlePosition,
       () => setGpsStatus('failed'),
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     )
@@ -648,13 +657,6 @@ export default function ScanView({ onBack, user }) {
             </button>
           </div>
           <div className="scan-overlay">
-            <div className="scan-frame-box">
-              <div className="scan-corner-tl" />
-              <div className="scan-corner-tr" />
-              <div className="scan-corner-bl" />
-              <div className="scan-corner-br" />
-              <div className="scan-laser" />
-            </div>
             <p className="scan-hint">Align barcode within the frame</p>
             <button
               className="scan-manual-btn"
