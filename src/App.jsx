@@ -381,9 +381,8 @@ export default function App() {
     <div className="app">
       <header className="header">
         <div className="header-inner">
-          <img src="/squrry-logo.png" alt="Squrry" style={{ height: 32, width: 'auto' }} />
+          <img src="/squrry-logo.png" alt="Squrry" style={{ height: 40, width: 'auto' }} />
           <div className="header-text">
-            <h1>Squrry</h1>
             <p className="tagline">IE's smartest grocery optimizer</p>
           </div>
         </div>
@@ -403,8 +402,7 @@ export default function App() {
             <Menu size={22} />
           </button>
           <div className="topbar-wordmark">
-            <img src="/squrry-logo.png" alt="Squrry" style={{ height: 32, width: 'auto' }} />
-            Squrry
+            <img src="/squrry-logo.png" alt="Squrry" style={{ height: 40, width: 'auto' }} />
           </div>
           <div className="topbar-actions">
             {queueCount > 0 && (
