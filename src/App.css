@@ -560,3 +560,17 @@ h1 { font-size: 17px; font-weight: 800; color: var(--text); }
 .torch-btn { position: absolute; bottom: 120px; right: 20px; background: rgba(0,0,0,0.6); color: white; border: 1.5px solid rgba(255,255,255,0.4); border-radius: 20px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; z-index: 10; }
 
 .drawer-version { text-align: center; font-size: 11px; color: rgba(255,255,255,0.3); padding: 12px 0 4px; margin-top: auto; }
+
+#squrry-scanner-region,
+#squrry-scanner-region > div,
+#squrry-scanner-region video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+#squrry-scanner-region video {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
