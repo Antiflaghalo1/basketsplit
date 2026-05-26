@@ -12,9 +12,9 @@ export default function HamburgerDrawer({ isOpen, onClose, budget, avatarUrl, fi
       >
         <button className="drawer-close-btn" onClick={onClose}>✕</button>
 
-        <div className="drawer-header">
+        <div className="drawer-header" style={{ padding: '12px 16px' }}>
           <button className="drawer-home-btn" onClick={() => { onHome?.() }}>
-            <img src="/squrry-logo.png" alt="Squrry" style={{ height: 120, width: 'auto', maxWidth: '90%' }} />
+            <img src="/squrry-logo.png" alt="Squrry" style={{ height: 56, width: 'auto' }} />
           </button>
         </div>
 
