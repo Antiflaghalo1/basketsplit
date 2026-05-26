@@ -298,6 +298,30 @@ export default function App() {
     setSelectedSavedItems(prev => { const next = new Set(prev); next.delete(upc); return next })
   }
 
+  async function handleCartClick() {
+    if (!user?.id) {
+      navTo('auth')
+      return
+    }
+    const { data: savedItemsData } = await supabase
+      .from('saved_items')
+      .select('upc')
+      .eq('user_id', user.id)
+
+    if (!savedItemsData || savedItemsData.length === 0) {
+      navTo('saved')
+      return
+    }
+
+    const upcs = savedItemsData.map(s => String(s.upc))
+    const stores = await getAllStores()
+    const optimizerResults = await optimizeFromSupabase(upcs, stores)
+    setResults(optimizerResults)
+    setResultSource('supabase')
+    navTo('results')
+    setShowNoBudgetBanner(!budget)
+  }
+
   async function handleOptimizeSaved() {
     const res = await optimizeFromSupabase(Array.from(selectedSavedItems), stores)
     setResults(res)
@@ -370,7 +394,7 @@ export default function App() {
               <Search size={20} />
             </button>
             <div className="topbar-cart-wrap">
-              <button className="topbar-cart-btn" onClick={() => navTo('saved')}>
+              <button className="topbar-cart-btn" onClick={handleCartClick}>
                 <ShoppingCart size={20} />
               </button>
               {savedItemsCount > 0 && (
