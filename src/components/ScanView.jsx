@@ -107,6 +107,24 @@ export default function ScanView({ onBack, user }) {
   const pollIntervalRef = useRef(null)
   const detectedStoreRef = useRef(null)
 
+  async function subscribeToPush() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return null
+    try {
+      const reg = await navigator.serviceWorker.ready
+      const existing = await reg.pushManager.getSubscription()
+      if (existing) return existing
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: import.meta.env.VITE_VAPID_PUBLIC
+      })
+      await supabase.from('push_subscriptions').upsert({
+        user_id: user?.id,
+        subscription: sub.toJSON()
+      }, { onConflict: 'user_id' })
+      return sub
+    } catch { return null }
+  }
+
   function runGpsDetection() {
     if (!navigator.geolocation) return
     if (watchIdRef.current !== null) {
@@ -136,6 +154,18 @@ export default function ScanView({ onBack, user }) {
             setGpsStatus('detected')
             setDetectedStore(match)
             detectedStoreRef.current = match
+            subscribeToPush().then(sub => {
+              if (!sub) return
+              fetch('/api/send-push', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  subscription: sub,
+                  title: `Welcome to ${match.name}!`,
+                  body: 'Tap to see the latest deals and community prices.'
+                })
+              })
+            })
           }
           return
         }
