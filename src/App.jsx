@@ -381,7 +381,7 @@ export default function App() {
     <div className="app">
       <header className="header">
         <div className="header-inner">
-          <img src="/squrry-logo.png" alt="Squrry" style={{ height: 80, width: 'auto' }} />
+          <img src="/squrry-logo.png" alt="Squrry" style={{ height: 50, width: 'auto' }} />
           <div className="header-text">
             <p className="tagline">IE's smartest grocery optimizer</p>
           </div>
