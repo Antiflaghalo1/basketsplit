@@ -170,7 +170,14 @@ export default function App() {
       console.log('[Push] Service worker ready')
       const existing = await reg.pushManager.getSubscription()
       if (existing) {
-        console.log('[Push] Existing subscription found, returning it')
+        console.log('[Push] Existing subscription found')
+        if (user?.id) {
+          await supabase.from('push_subscriptions').upsert({
+            user_id: user.id,
+            subscription: existing.toJSON()
+          }, { onConflict: 'user_id' })
+          console.log('[Push] Existing sub saved to Supabase')
+        }
         return existing
       }
       console.log('[Push] Creating new subscription...')
