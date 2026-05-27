@@ -273,16 +273,6 @@ export default function App() {
       .then(({ count }) => setSavedItemsCount(count || 0))
   }, [user?.id, view])
 
-  useEffect(() => {
-    if (!user) return
-    const handler = (e) => {
-      e.preventDefault()
-      e.returnValue = ''
-    }
-    window.addEventListener('beforeunload', handler)
-    return () => window.removeEventListener('beforeunload', handler)
-  }, [user])
-
   const toggleItem = (itemId) => {
     setSelectedItems(prev => {
       const next = new Set(prev)
