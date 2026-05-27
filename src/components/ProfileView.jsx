@@ -170,7 +170,12 @@ export default function ProfileView({ user, firstName, lastName, avatarUrl, onAv
               })
             })
             const data = await res.json()
-            alert('Response: ' + JSON.stringify(data))
+            const saveResult = user?.id ? await supabase.from('push_subscriptions').upsert({
+              user_id: user.id,
+              subscription: sub.toJSON()
+            }, { onConflict: 'user_id' }) : { error: 'no user id' }
+
+            alert('Push: ' + JSON.stringify(data) + '\nUser ID: ' + user?.id + '\nSave error: ' + JSON.stringify(saveResult?.error) + '\nSub type: ' + typeof sub.toJSON())
           } catch(err) {
             alert('Error: ' + err.message)
           }
