@@ -109,6 +109,7 @@ export default function ScanView({ onBack, user }) {
   const [torchOn, setTorchOn] = useState(false)
   const [torchSupported, setTorchSupported] = useState(false)
   const [priceUnit, setPriceUnit] = useState('ea')
+  const [promoType, setPromoType] = useState('regular')
   const [detectedStore, setDetectedStore] = useState(null)
   const watchIdRef = useRef(null)
   const pollIntervalRef = useRef(null)
@@ -586,6 +587,7 @@ export default function ScanView({ onBack, user }) {
       storeId,
       price: parseFloat(parsedPrice.toFixed(2)),
       price_unit: priceUnit,
+      promo_type: promoType,
       timestamp: Date.now(),
       hasPhoto: !!photoBlob,
     }, user?.id)
@@ -616,6 +618,7 @@ export default function ScanView({ onBack, user }) {
     setShowReportModal(false)
     setSavedQueued(false)
     setPriceUnit('ea')
+    setPromoType('regular')
     stopScanner()
     setPhase('scanning')
   }
@@ -888,6 +891,34 @@ export default function ScanView({ onBack, user }) {
               ))}
             </div>
           )}
+          <div style={{ marginTop: 12 }}>
+  <label className="scan-label">Pricing Type</label>
+  <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
+    {[
+      { value: 'regular', label: '🏷️ Regular' },
+      { value: 'member', label: '💳 Member price' },
+      { value: 'quantity', label: '📦 Quantity deal' },
+    ].map(opt => (
+      <button
+        key={opt.value}
+        type="button"
+        onClick={() => setPromoType(opt.value)}
+        style={{
+          padding: '4px 12px',
+          borderRadius: 20,
+          border: '1px solid var(--green)',
+          background: promoType === opt.value ? 'var(--green)' : 'transparent',
+          color: promoType === opt.value ? 'white' : 'var(--green)',
+          fontSize: 13,
+          fontWeight: 600,
+          cursor: 'pointer'
+        }}
+      >
+        {opt.label}
+      </button>
+    ))}
+  </div>
+</div>
           {priceError && (
             <p style={{ color: '#C62828', fontSize: 13, marginTop: 8 }}>{priceError}</p>
           )}

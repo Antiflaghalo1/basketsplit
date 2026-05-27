@@ -17,6 +17,7 @@ export async function addObservation(obs, userId) {
     store_id: obs.storeId,
     price: obs.price,
     price_unit: obs.price_unit || 'ea',
+    promo_type: obs.promo_type || 'regular',
     has_photo: obs.hasPhoto || false,
   }
 
