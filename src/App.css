@@ -1,3 +1,9 @@
+html, body {
+  overscroll-behavior: none;
+  overscroll-behavior-y: none;
+  height: 100%;
+}
+
 html {
   background: var(--bg);
 }
@@ -28,7 +34,7 @@ body {
 }
 
 /* Header */
-.header { background: var(--bg); color: var(--text); padding: 14px 18px; position: sticky; top: 0; z-index: 10; box-shadow: 0 1px 0 var(--border); }
+.header { background: var(--bg); color: var(--text); padding: 14px 18px; position: sticky; top: 0; z-index: 10; box-shadow: 0 1px 0 var(--border); overscroll-behavior: none; }
 .header-inner { display: flex; align-items: center; gap: 12px; }
 .logo { width: 28px; height: 28px; background: var(--green); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
 h1 { font-size: 17px; font-weight: 800; color: var(--text); }
@@ -262,7 +268,7 @@ h1 { font-size: 17px; font-weight: 800; color: var(--text); }
 /* ── Top bar (new header layout) ── */
 .topbar {}
 .topbar-inner { display: flex; align-items: center; position: relative; }
-.topbar-wordmark { position: absolute; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 6px; font-size: 17px; font-weight: 800; color: var(--text); white-space: nowrap; pointer-events: none; }
+.topbar-wordmark { position: absolute; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 6px; font-size: 17px; font-weight: 800; color: var(--text); white-space: nowrap; pointer-events: auto; }
 .topbar-wordmark-emoji { font-size: 20px; }
 .topbar-actions { margin-left: auto; display: flex; align-items: center; gap: 6px; }
 .topbar-menu-btn,
@@ -275,7 +281,7 @@ h1 { font-size: 17px; font-weight: 800; color: var(--text); }
 .topbar-cart-badge { position: absolute; top: -5px; right: -5px; background: #C8922A; color: white; font-size: 10px; font-weight: 800; min-width: 16px; height: 16px; border-radius: 999px; display: flex; align-items: center; justify-content: center; padding: 0 3px; line-height: 1; pointer-events: none; }
 
 /* ── Bottom navigation bar ── */
-.app { padding-bottom: 80px; }
+.app { padding-bottom: 80px; overscroll-behavior: none; overscroll-behavior-y: none; height: 100%; }
 .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: var(--card-bg); border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-around; height: 64px; z-index: 10; }
 .bottom-nav-tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; background: none; border: none; cursor: pointer; padding: 8px 0; color: var(--text-muted); transition: color .1s; }
 .bottom-nav-tab.active { color: var(--green); }
