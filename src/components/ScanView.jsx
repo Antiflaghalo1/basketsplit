@@ -863,7 +863,8 @@ export default function ScanView({ onBack, user }) {
               onChange={e => { setPrice(e.target.value); setPriceError('') }}
             />
           </div>
-          {(autoCategory === 'Meat & Seafood' || autoCategory === 'Produce') && (
+          {(autoCategory === 'Meat & Seafood' || autoCategory === 'Produce' ||
+  selectedCategory === 'Meat & Seafood' || selectedCategory === 'Produce') && (
             <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 13, color: 'var(--text-muted)', alignSelf: 'center' }}>Priced per:</span>
               {['ea', 'lb', 'oz', 'kg'].map(unit => (
