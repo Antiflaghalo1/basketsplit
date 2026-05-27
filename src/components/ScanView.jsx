@@ -108,6 +108,7 @@ export default function ScanView({ onBack, user }) {
   const [apiLookupStatus, setApiLookupStatus] = useState(null)
   const [torchOn, setTorchOn] = useState(false)
   const [torchSupported, setTorchSupported] = useState(false)
+  const [priceUnit, setPriceUnit] = useState('ea')
   const [detectedStore, setDetectedStore] = useState(null)
   const watchIdRef = useRef(null)
   const pollIntervalRef = useRef(null)
@@ -584,6 +585,7 @@ export default function ScanView({ onBack, user }) {
       productName: finalName,
       storeId,
       price: parseFloat(parsedPrice.toFixed(2)),
+      price_unit: priceUnit,
       timestamp: Date.now(),
       hasPhoto: !!photoBlob,
     }, user?.id)
@@ -613,6 +615,7 @@ export default function ScanView({ onBack, user }) {
     setApiLookupStatus(null)
     setShowReportModal(false)
     setSavedQueued(false)
+    setPriceUnit('ea')
     stopScanner()
     setPhase('scanning')
   }
@@ -860,6 +863,30 @@ export default function ScanView({ onBack, user }) {
               onChange={e => { setPrice(e.target.value); setPriceError('') }}
             />
           </div>
+          {(autoCategory === 'Meat & Seafood' || autoCategory === 'Produce') && (
+            <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 13, color: 'var(--text-muted)', alignSelf: 'center' }}>Priced per:</span>
+              {['ea', 'lb', 'oz', 'kg'].map(unit => (
+                <button
+                  key={unit}
+                  type="button"
+                  onClick={() => setPriceUnit(unit)}
+                  style={{
+                    padding: '4px 12px',
+                    borderRadius: 20,
+                    border: '1px solid var(--green)',
+                    background: priceUnit === unit ? 'var(--green)' : 'transparent',
+                    color: priceUnit === unit ? 'white' : 'var(--green)',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  {unit === 'ea' ? 'flat price' : `/ ${unit}`}
+                </button>
+              ))}
+            </div>
+          )}
           {priceError && (
             <p style={{ color: '#C62828', fontSize: 13, marginTop: 8 }}>{priceError}</p>
           )}
