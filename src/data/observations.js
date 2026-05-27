@@ -18,6 +18,8 @@ export async function addObservation(obs, userId) {
     price: obs.price,
     price_unit: obs.price_unit || 'ea',
     promo_type: obs.promo_type || 'regular',
+    promo_price: obs.promo_price || null,
+    promo_quantity: obs.promo_quantity || null,
     has_photo: obs.hasPhoto || false,
   }
 

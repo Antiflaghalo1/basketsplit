@@ -110,6 +110,8 @@ export default function ScanView({ onBack, user }) {
   const [torchSupported, setTorchSupported] = useState(false)
   const [priceUnit, setPriceUnit] = useState('ea')
   const [promoType, setPromoType] = useState('regular')
+  const [promoPrice, setPromoPrice] = useState('')
+  const [promoQuantity, setPromoQuantity] = useState('')
   const [detectedStore, setDetectedStore] = useState(null)
   const watchIdRef = useRef(null)
   const pollIntervalRef = useRef(null)
@@ -588,6 +590,8 @@ export default function ScanView({ onBack, user }) {
       price: parseFloat(parsedPrice.toFixed(2)),
       price_unit: priceUnit,
       promo_type: promoType,
+      promo_price: promoPrice ? parseFloat(parseFloat(promoPrice).toFixed(2)) : null,
+      promo_quantity: promoQuantity ? parseInt(promoQuantity) : null,
       timestamp: Date.now(),
       hasPhoto: !!photoBlob,
     }, user?.id)
@@ -619,6 +623,8 @@ export default function ScanView({ onBack, user }) {
     setSavedQueued(false)
     setPriceUnit('ea')
     setPromoType('regular')
+    setPromoPrice('')
+    setPromoQuantity('')
     stopScanner()
     setPhase('scanning')
   }
@@ -852,7 +858,7 @@ export default function ScanView({ onBack, user }) {
           )}
 
           {/* Price */}
-          <label className="scan-label">Price Seen Today</label>
+          <label className="scan-label">{promoType === 'regular' ? 'Price Seen Today' : 'Regular Price'}</label>
           <div className="scan-price-wrap">
             <span className="scan-dollar">$</span>
             <input
@@ -919,6 +925,58 @@ export default function ScanView({ onBack, user }) {
     ))}
   </div>
 </div>
+          {promoType === 'member' && (
+  <div style={{ marginTop: 12 }}>
+    <label className="scan-label">Member Price</label>
+    <div className="scan-price-wrap">
+      <span className="scan-dollar">$</span>
+      <input
+        className="scan-input scan-price-input"
+        type="number"
+        inputMode="decimal"
+        step="0.01"
+        min="0"
+        placeholder="0.00"
+        value={promoPrice}
+        onChange={e => setPromoPrice(e.target.value)}
+      />
+    </div>
+  </div>
+)}
+
+{promoType === 'quantity' && (
+  <div style={{ marginTop: 12 }}>
+    <label className="scan-label">Quantity Deal</label>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+      <span style={{ fontSize: 14, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Buy</span>
+      <input
+        className="scan-input"
+        type="number"
+        inputMode="numeric"
+        min="1"
+        placeholder="3"
+        value={promoQuantity}
+        onChange={e => setPromoQuantity(e.target.value)}
+        style={{ width: 64, textAlign: 'center' }}
+      />
+      <span style={{ fontSize: 14, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>for</span>
+      <div className="scan-price-wrap" style={{ flex: 1, minWidth: 100 }}>
+        <span className="scan-dollar">$</span>
+        <input
+          className="scan-input scan-price-input"
+          type="number"
+          inputMode="decimal"
+          step="0.01"
+          min="0"
+          placeholder="0.00"
+          value={promoPrice}
+          onChange={e => setPromoPrice(e.target.value)}
+        />
+      </div>
+    </div>
+  </div>
+)}
+
           {priceError && (
             <p style={{ color: '#C62828', fontSize: 13, marginTop: 8 }}>{priceError}</p>
           )}
