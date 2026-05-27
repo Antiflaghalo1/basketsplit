@@ -475,7 +475,7 @@ export default function App() {
     <div className="app">
       <header className="header">
         <div className="header-inner">
-          <img src="/squrry-logo.png" alt="Squrry" style={{ height: 50, width: 'auto' }} />
+          <img src="/squrry-logo.png" alt="Squrry" style={{ height: 50, width: 'auto', cursor: 'pointer' }} onClick={() => window.location.reload()} />
           <div className="header-text">
             <p className="tagline">IE's smartest grocery optimizer</p>
           </div>
@@ -496,7 +496,7 @@ export default function App() {
             <Menu size={22} />
           </button>
           <div className="topbar-wordmark">
-            <img src="/squrry-logo.png" alt="Squrry" style={{ height: 48, width: 'auto' }} />
+            <img src="/squrry-logo.png" alt="Squrry" style={{ height: 48, width: 'auto', cursor: 'pointer' }} onClick={() => window.location.reload()} />
           </div>
           <div className="topbar-actions">
             {queueCount > 0 && (
