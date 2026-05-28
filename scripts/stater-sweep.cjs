@@ -4,23 +4,25 @@
 const { createClient } = require('@supabase/supabase-js');
 
 // ─── CONFIG ────────────────────────────────────────────────
-const SUPABASE_URL        = process.env.SUPABASE_URL;
-const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY;
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 const SEARCH_API = 'https://api-dxpro.mercatus.com/gateway/product/v2.0/api/search';
 const OFFERS_API = 'https://api-dxpro.mercatus.com/gateway/dxp-core/v1.0/api/Offer/GetOfferInfosByUpcs';
 const TENANT_ID  = '10016';
 
 const IE_STORES = [
-  { storeCode: '184', dbId: 'staters_chino_schaefer_ave',       city: 'Chino — Schaefer Ave'      },
-  { storeCode: '209', dbId: 'staters_chino_pine_ave',            city: 'Chino — Pine Ave'           },
-  { storeCode: '052', dbId: 'staters_chino_riverside_dr',        city: 'Chino — Riverside Dr'       },
-  { storeCode: '169', dbId: 'staters_chinohills',                city: 'Chino Hills — Chino Hills Pkwy' },
-  { storeCode: '085', dbId: 'staters_ontario_4th_st',            city: 'Ontario — 4th St'           },
-  { storeCode: '208', dbId: 'staters_ontario_haven_ave',         city: 'Ontario — Haven Ave'        },
-  { storeCode: '108', dbId: 'staters_ontario_holt_blvd',         city: 'Ontario — Holt Blvd'        },
-  { storeCode: '204', dbId: 'staters_ontario_ontario_ranch_rd',  city: 'Ontario — Ontario Ranch Rd' },
-  { storeCode: '059', dbId: 'staters_ontario_philadelphia_st',   city: 'Ontario — Philadelphia St'  },
+  { storeCode: '184', dbId: 'staters_chino_schaefer_ave',      city: 'Chino — Schaefer Ave'       },
+  { storeCode: '209', dbId: 'staters_chino_pine_ave',           city: 'Chino — Pine Ave'            },
+  { storeCode: '052', dbId: 'staters_chino_riverside_dr',       city: 'Chino — Riverside Dr'        },
+  { storeCode: '169', dbId: 'staters_chinohills',               city: 'Chino Hills — Chino Hills Pkwy' },
+  { storeCode: '085', dbId: 'staters_ontario_4th_st',           city: 'Ontario — 4th St'            },
+  { storeCode: '208', dbId: 'staters_ontario_haven_ave',        city: 'Ontario — Haven Ave'         },
+  { storeCode: '108', dbId: 'staters_ontario_holt_blvd',        city: 'Ontario — Holt Blvd'         },
+  { storeCode: '204', dbId: 'staters_ontario_ontario_ranch_rd', city: 'Ontario — Ontario Ranch Rd'  },
+  { storeCode: '059', dbId: 'staters_ontario_philadelphia_st',  city: 'Ontario — Philadelphia St'   },
 ];
 
 const SEARCH_TERMS = [
@@ -39,9 +41,6 @@ const SEARCH_TERMS = [
 const PAGE_SIZE = 30;
 const DELAY_MS  = 1500;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-
-// ─── SUPABASE ──────────────────────────────────────────────
-const supabase = createClient(SUPABASE_URL, SUPABASE_SECRET_KEY);
 
 // ─── TOKEN ─────────────────────────────────────────────────
 async function getGuestToken() {
@@ -305,7 +304,6 @@ async function main() {
   for (const store of IE_STORES) {
     console.log(`[stater-sweep] → ${store.city}`);
 
-    // Fetch offers in batches of 30
     const offerMap = {};
     for (let i = 0; i < upcs.length; i += 30) {
       const batch       = upcs.slice(i, i + 30);
