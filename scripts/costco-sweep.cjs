@@ -35,13 +35,12 @@ const WAREHOUSE_847_LOC = [
   '847_NA-cor','847_NA-pharmacy','847_NA-wm','953-wm','952-wm',
 ].join(',');
 
-// IE Costco stores — all use warehouse 847 pricing for now
-// Update dbId to match your stores table IDs
+// IE Costco stores — all use warehouse 847 pricing
 const IE_STORES = [
-  { dbId: 'costco_temecula',         city: 'Temecula' },
-  { dbId: 'costco_chino',            city: 'Chino' },
-  { dbId: 'costco_rancho_cucamonga', city: 'Rancho Cucamonga' },
-  { dbId: 'costco_moreno_valley',    city: 'Moreno Valley' },
+  { dbId: 'costco_temecula',         city: 'Temecula'          },
+  { dbId: 'costco_chinohills',       city: 'Chino Hills'       },
+  { dbId: 'costco_rancho_cucamonga', city: 'Rancho Cucamonga'  },
+  { dbId: 'costco_murrieta',         city: 'Murrieta'          },
 ];
 
 const SEARCH_TERMS = [
