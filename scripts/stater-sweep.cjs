@@ -43,58 +43,15 @@ const DELAY_MS  = 1500;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 // ─── TOKEN ─────────────────────────────────────────────────
+// Stater Bros uses Mercatus platform behind Cloudflare.
+// Token is a 24hr guest JWT — set STATER_TOKEN in .env from DevTools.
+// TODO Phase 2: auto-refresh via /api/account/me once we crack Cloudflare bypass.
 async function getGuestToken() {
-  console.log('[stater-sweep] Fetching guest token...');
-
-  const res = await fetch('https://www.staterbros.com/en', {
-    headers: {
-      'user-agent':      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15',
-      'accept':          'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      'accept-language': 'en-US,en;q=0.5',
-      'dnt':             '1',
-    },
-  });
-
-  if (!res.ok) throw new Error(`Page fetch failed: ${res.status}`);
-
-  const html = await res.text();
-
-  // Try: JWT directly in HTML
-  const jwtMatch = html.match(/"accessToken"\s*:\s*"(eyJ[^"]+)"/);
-  if (jwtMatch) {
-    console.log('[stater-sweep] ✅ Token found in HTML');
-    return jwtMatch[1];
+  if (process.env.STATER_TOKEN) {
+    console.log('[stater-sweep] ✅ Using token from env');
+    return process.env.STATER_TOKEN;
   }
-
-  // Try: Next.js __NEXT_DATA__ embedded JSON
-  const nextDataMatch = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
-  if (nextDataMatch) {
-    try {
-      const nextData = JSON.parse(nextDataMatch[1]);
-      const pp = nextData?.props?.pageProps;
-      const token =
-        pp?.accessToken   ||
-        pp?.token         ||
-        pp?.bearerToken   ||
-        pp?.mercatusToken ||
-        nextData?.props?.initialState?.auth?.token ||
-        nextData?.props?.initialState?.accessToken;
-
-      if (token) {
-        console.log('[stater-sweep] ✅ Token found in __NEXT_DATA__');
-        return token;
-      }
-
-      console.log('[stater-sweep] __NEXT_DATA__ top keys:', Object.keys(nextData || {}));
-      console.log('[stater-sweep] pageProps keys:', Object.keys(pp || {}));
-    } catch (e) {
-      console.warn('[stater-sweep] Could not parse __NEXT_DATA__:', e.message);
-    }
-  }
-
-  console.error('[stater-sweep] ❌ Token not found. HTML snippet:');
-  console.error(html.substring(0, 3000));
-  throw new Error('Token extraction failed — check HTML above to debug');
+  throw new Error('No STATER_TOKEN in .env — grab a fresh one from DevTools on staterbros.com and add it');
 }
 
 // ─── SEARCH ────────────────────────────────────────────────
@@ -137,7 +94,7 @@ async function searchProducts(token, storeCode, keyword, page = 1) {
       }),
     });
 
-    if (res.status === 401) throw new Error('Token expired or invalid');
+    if (res.status === 401) throw new Error('Token expired — grab a fresh one from DevTools');
     if (!res.ok) {
       console.warn(`[stater-sweep] Search HTTP ${res.status} for "${keyword}"`);
       return { products: [] };
