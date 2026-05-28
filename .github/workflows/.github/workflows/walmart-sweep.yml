@@ -1,20 +1,24 @@
 name: Walmart Sweep
-
 on:
   schedule:
-    - cron: '0 5 * * 3'  # Wednesdays 5am UTC (after Flipp)
+    - cron: '0 5 * * 3'
   workflow_dispatch:
-
 jobs:
   sweep:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
-      - run: npm ci
-      - run: node scripts/walmart-sweep.cjs
+          node-version: '20'
+      - name: Install dependencies
+        run: npm ci
+      - name: Run Walmart sweep
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: node scripts/walmart-sweep.cjs
+      - name: Log completion
+        run: echo "✅ Walmart sweep completed at $(date)"
