@@ -48,6 +48,8 @@ const SEARCH_TERMS = [
   // Household
   'diapers', 'laundry detergent', 'dish soap',
   'paper towels', 'toilet paper', 'trash bags',
+  // Snacks
+  'snacks', 'chips',
 ];
 
 const USER_AGENT =

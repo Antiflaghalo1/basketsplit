@@ -59,6 +59,8 @@ const SEARCH_TERMS = [
   'potatoes', 'onions', 'apples', 'bananas', 'avocado',
   // Household
   'diapers', 'laundry detergent', 'paper towels', 'toilet paper', 'trash bags',
+  // Snacks
+  'snacks', 'chips',
 ];
 
 const ROWS_PER_PAGE = 24;
