@@ -1,0 +1,32 @@
+name: Stater Bros Sweep
+on:
+  schedule:
+    - cron: '0 7 * * 3'  # Wednesdays 7am UTC (after Walmart + Costco)
+    - cron: '0 7 * * 6'  # Saturdays 7am UTC
+  workflow_dispatch:
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Stater Bros sweep
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/stater-sweep.cjs
+
+      - name: Log completion
+        run: echo "✅ Stater Bros sweep completed at $(date)"
