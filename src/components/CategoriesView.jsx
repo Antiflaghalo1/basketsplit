@@ -245,23 +245,19 @@ export default function CategoriesView({ onBack, userId, savedUpcs = new Set(), 
 
   async function load() {
     setLoading(true)
-    const { data } = await supabase
-      .from('products')
-      .select('upc, name, brand, category, normalized_category, image_url, last_scanned_at')
-      .order('last_scanned_at', { ascending: false })
+    const { data: categoryData, error } = await supabase.rpc('get_category_counts')
+    if (error) console.error('Category counts error:', error.message)
 
-    if (!data || data.length === 0) {
+    if (!categoryData || categoryData.length === 0) {
       setGroups([])
       setLoading(false)
       return
     }
 
     const groupMap = {}
-    for (const p of data) {
-      const key = p.normalized_category || 'Miscellaneous'
-      if (!groupMap[key]) groupMap[key] = { name: key, products: [], thumbnail: null }
-      groupMap[key].products.push(p)
-      if (!groupMap[key].thumbnail && p.image_url) groupMap[key].thumbnail = p.image_url
+    for (const item of categoryData) {
+      const key = item.normalized_category || 'Miscellaneous'
+      groupMap[key] = { name: key, itemCount: item.count, products: [] }
     }
 
     setGroups(Object.values(groupMap).sort((a, b) => a.name.localeCompare(b.name)))
@@ -771,7 +767,7 @@ export default function CategoriesView({ onBack, userId, savedUpcs = new Set(), 
                       <div className="cat-card-name">{g.name}</div>
                       <div className="cat-card-meta">
                         <span className="cat-card-count">
-                          {g.products.length} item{g.products.length !== 1 ? 's' : ''}
+                          {g.itemCount} item{g.itemCount !== 1 ? 's' : ''}
                         </span>
                         <span className="cat-card-freshness" style={{ color: fresh.color }}>
                           <span className="cat-card-dot" style={{ background: fresh.dot }} />
