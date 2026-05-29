@@ -213,11 +213,11 @@ export default function HomeView({ user, firstName, budget, onBudgetNav, onSeeAl
         <div className="community-pulse-bar">
           <div className="pulse-stat">
             <TrendingUp size={14} />
-            {pulseStats.prices ?? '…'} prices this week
+            {pulseStats.prices?.toLocaleString() ?? '…'} prices this week
           </div>
           <div className="pulse-stat">
             <Package size={14} />
-            {pulseStats.products ?? '…'} products tracked
+            {pulseStats.products?.toLocaleString() ?? '…'} products tracked
           </div>
         </div>
       )}
