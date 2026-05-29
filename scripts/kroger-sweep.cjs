@@ -157,6 +157,13 @@ async function insertObservation(item, dbStoreId) {
     console.error(`[kroger-sweep] Observation error: ${error.message}`);
     return false;
   }
+  await supabase.from('price_history').insert({
+    barcode:     item.upc,
+    store_id:    dbStoreId,
+    price:       finalPrice,
+    source:      'kroger_sweep',
+    recorded_at: new Date().toISOString(),
+  });
   return true;
 }
 

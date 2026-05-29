@@ -181,6 +181,13 @@ async function insertObservation(item, dbStoreId) {
     console.error(`[costco-sweep] Observation error: ${error.message}`);
     return false;
   }
+  await supabase.from('price_history').insert({
+    barcode:     item.upc,
+    store_id:    dbStoreId,
+    price:       item.price,
+    source:      'costco_sweep',
+    recorded_at: new Date().toISOString(),
+  });
   return true;
 }
 

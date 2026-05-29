@@ -187,6 +187,13 @@ async function insertObservation(upc, name, dbStoreId, price) {
     console.error(`[walmart-sweep] Observation error: ${error.message}`);
     return false;
   }
+  await supabase.from('price_history').insert({
+    barcode:     upc,
+    store_id:    dbStoreId,
+    price,
+    source:      'walmart_sweep',
+    recorded_at: new Date().toISOString(),
+  });
   return true;
 }
 
