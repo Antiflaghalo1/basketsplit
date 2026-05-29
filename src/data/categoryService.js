@@ -43,6 +43,7 @@ export async function fetchUntaggedItems(normalizedCategory) {
     .select('id, barcode, price, store_id, created_at')
     .in('barcode', upcList)
     .eq('voided', false)
+    .limit(10000)
     .order('created_at', { ascending: false });
 
   const newestPerPair = new Map();
