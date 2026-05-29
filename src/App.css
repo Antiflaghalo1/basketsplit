@@ -1260,3 +1260,39 @@ h1 { font-size: 17px; font-weight: 800; color: var(--text); }
   margin: 0;
   line-height: 1.5;
 }
+
+/* ============================================================
+ * Category drill — Load More button
+ * ============================================================ */
+
+.load-more-btn {
+  display: block;
+  width: calc(100% - 32px);
+  max-width: 420px;
+  margin: 14px auto 92px;
+  padding: 12px 16px;
+  border: 1px solid rgba(55, 112, 76, 0.22);
+  border-radius: 14px;
+  background: var(--green-pale);
+  color: var(--green);
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(38, 70, 50, 0.08);
+}
+
+.load-more-btn:hover {
+  border-color: var(--green);
+  background: rgba(55, 112, 76, 0.1);
+}
+
+.load-more-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 4px rgba(38, 70, 50, 0.08);
+}
+
+.load-more-btn:focus-visible {
+  outline: 3px solid rgba(55, 112, 76, 0.22);
+  outline-offset: 2px;
+}
