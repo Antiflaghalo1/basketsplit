@@ -43,7 +43,7 @@ export default function SearchView({ onBack, onStoreSelect }) {
         .limit(10),
       supabase
         .from('flipp_observations')
-        .select('product_name, store_id, price, sale_type')
+        .select('product_name, store_id, price, sale_type, regular_price, promo_description, merchant_name, clean_image_url')
         .ilike('product_name', `%${q}%`)
         .gt('price', 0)
         .limit(10),
@@ -77,7 +77,16 @@ export default function SearchView({ onBack, onStoreSelect }) {
     }
 
     setProducts(enriched)
-    setDeals(flippData || [])
+    const seen = new Map()
+    for (const item of (flippData || [])) {
+      const key = `${item.product_name}|${item.merchant_name}`
+      const existing = seen.get(key)
+      if (!existing || item.price < existing.price) {
+        seen.set(key, item)
+      }
+    }
+    const deduped = [...seen.values()]
+    setDeals(deduped)
     setStoreResults(storeData || [])
     setLoading(false)
     setSearched(true)
@@ -170,6 +179,8 @@ export default function SearchView({ onBack, onStoreSelect }) {
                       <div className="recent-info">
                         <div className="recent-name">{deal.product_name}</div>
                         <div className="search-deal-price">${Number(deal.price).toFixed(2)}</div>
+                        {deal.regular_price && <span style={{fontSize:11, color:'var(--text-muted)', textDecoration:'line-through'}}>${Number(deal.regular_price).toFixed(2)}</span>}
+                        {deal.promo_description && <span className="store-deal-promo-badge">{deal.promo_description}</span>}
                         {storeName && <div className="recent-cat">{storeName}</div>}
                         <span className="sale-badge search-sale-badge">On Sale</span>
                       </div>

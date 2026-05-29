@@ -24,7 +24,7 @@ function haversine(lat1, lng1, lat2, lng2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
-export default function HomeView({ user, firstName, budget, onBudgetNav, onSeeAll, onStoreSelect, onSeeAllDeals }) {
+export default function HomeView({ user, firstName, budget, onBudgetNav, onSeeAll, onStoreSelect, onSeeAllDeals, onSeeAllStores, onStoresLoaded }) {
   const [stores, setStores] = useState([])
   const [recentProducts, setRecentProducts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -34,6 +34,7 @@ export default function HomeView({ user, firstName, budget, onBudgetNav, onSeeAl
   const [showStoreHint, setShowStoreHint] = useState(!localStorage.getItem('bs_home_hint_seen'))
   const watchIdRef = useRef(null)
   const pollIntervalRef = useRef(null)
+  const dealsLoadedForStores = useRef('')
 
   const budgetNum = parseFloat(budget) || 0
 
@@ -56,6 +57,7 @@ export default function HomeView({ user, firstName, budget, onBudgetNav, onSeeAl
         const withCoords = rawStores.filter(s => s.lat != null && s.lng != null)
         withCoords.sort((a, b) => haversine(lat, lng, a.lat, a.lng) - haversine(lat, lng, b.lat, b.lng))
         setStores([...withCoords, ...storesWithoutCoords])
+        onStoresLoaded?.([...withCoords, ...storesWithoutCoords])
       }
 
       function runDetection() {
@@ -93,19 +95,29 @@ export default function HomeView({ user, firstName, budget, onBudgetNav, onSeeAl
       }
     })
     loadRecent()
-    loadDeals()
   }, [])
 
-  async function loadDeals() {
+  useEffect(() => {
+    if (stores.length === 0) return
+    const topStoreIds = stores.slice(0, 5).map(s => String(s.id))
+    const key = topStoreIds.join(',')
+    if (dealsLoadedForStores.current === key) return
+    dealsLoadedForStores.current = key
+    loadDeals(topStoreIds)
+  }, [stores])
+
+  async function loadDeals(storeIds = []) {
     try {
       const today = new Date().toISOString().split('T')[0]
-      const { data } = await supabase
+      let query = supabase
         .from('flipp_observations')
         .select('product_name, store_id, price, valid_to, sale_type, regular_price, promo_description, clean_image_url, post_price_text')
+      if (storeIds.length > 0) query = query.in('store_id', storeIds)
+      const { data } = await query
         .gt('price', 0)
         .or(`valid_to.is.null,valid_to.gte.${today}`)
         .order('price', { ascending: true })
-        .limit(20)
+        .limit(10)
       const seen = new Set()
       const deduped = (data || []).filter(item => {
         const key = `${item.product_name}|${item.merchant_name}`
@@ -220,6 +232,7 @@ export default function HomeView({ user, firstName, budget, onBudgetNav, onSeeAl
             </div>
           ))}
         </div>
+        <button onClick={() => onSeeAllStores?.()} style={{background:'transparent', border:'none', color:'var(--green)', fontSize:13, fontWeight:700, cursor:'pointer', padding:'8px 0 0'}}>See all stores →</button>
       </div>
 
       {/* Section 2.5 — This Week's Deals */}

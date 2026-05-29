@@ -15,6 +15,7 @@ import CategoriesView from './components/CategoriesView'
 import SavedItemsView from './components/SavedItemsView'
 import HomeView from './components/HomeView'
 import AllDealsView from './components/AllDealsView'
+import AllStoresView from './components/AllStoresView'
 import SearchView from './components/SearchView'
 import StoreView from './components/StoreView'
 import EditProfileView from './components/EditProfileView'
@@ -30,6 +31,7 @@ const CATEGORIES = [...new Set(ITEMS.map(i => i.category))]
 
 export default function App() {
   const [stores, setStores] = useState([])
+  const [sortedStores, setSortedStores] = useState([])
   const [savedItems, setSavedItems] = useState([])
   const [savedUpcs, setSavedUpcs] = useState(new Set())
   const [selectedSavedItems, setSelectedSavedItems] = useState(new Set())
@@ -561,10 +563,13 @@ export default function App() {
           onSeeAll={() => navTo('recent')}
           onStoreSelect={(store) => { setSelectedStore(store); navTo('store') }}
           onSeeAllDeals={() => navTo('allDeals')}
+          onSeeAllStores={() => setView('allStores')}
+          onStoresLoaded={(s) => setSortedStores(s)}
         />
       )}
 
       {view === 'allDeals' && <AllDealsView onBack={goBack} />}
+      {view === 'allStores' && <AllStoresView onBack={() => setView('home')} stores={sortedStores} />}
 
       {view === 'search' && (
         <SearchView
