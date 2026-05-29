@@ -24,6 +24,8 @@ function freshnessBadge(ts) {
   return { label: '🔴 Stale', cls: 'freshness-stale' }
 }
 
+const PAGE_SIZE = 10
+
 export default function SearchView({ onBack, onStoreSelect }) {
   const [query, setQuery] = useState('')
   const [products, setProducts] = useState([])
@@ -34,8 +36,16 @@ export default function SearchView({ onBack, onStoreSelect }) {
   const [stores, setStores] = useState([])
   const [selectedDeal, setSelectedDeal] = useState(null)
   const [reportTarget, setReportTarget] = useState(null)
+  const [hasMoreCommunity, setHasMoreCommunity] = useState(false)
+  const [hasMoreDeals, setHasMoreDeals] = useState(false)
+  const [loadingMoreCommunity, setLoadingMoreCommunity] = useState(false)
+  const [loadingMoreDeals, setLoadingMoreDeals] = useState(false)
+  const [communityOffset, setCommunityOffset] = useState(0)
+  const [dealsOffset, setDealsOffset] = useState(0)
   const inputRef = useRef(null)
   const timerRef = useRef(null)
+  const currentQueryRef = useRef('')
+  const flippSeenRef = useRef(new Map())
 
   useEffect(() => {
     getAllStores().then(setStores)
@@ -44,16 +54,36 @@ export default function SearchView({ onBack, onStoreSelect }) {
 
   useEffect(() => {
     clearTimeout(timerRef.current)
+    currentQueryRef.current = ''
     if (!query.trim()) {
       setProducts([])
       setDeals([])
       setStoreResults([])
+      setSelectedDeal(null)
       setSearched(false)
       setLoading(false)
+      setHasMoreCommunity(false)
+      setHasMoreDeals(false)
+      setCommunityOffset(0)
+      setDealsOffset(0)
+      flippSeenRef.current = new Map()
       return
     }
+    setProducts([])
+    setDeals([])
+    setStoreResults([])
+    setSelectedDeal(null)
+    setHasMoreCommunity(false)
+    setHasMoreDeals(false)
+    setCommunityOffset(0)
+    setDealsOffset(0)
+    flippSeenRef.current = new Map()
     setLoading(true)
-    timerRef.current = setTimeout(() => runSearch(query.trim()), 300)
+    const q = query.trim()
+    timerRef.current = setTimeout(() => {
+      currentQueryRef.current = q
+      runSearch(q)
+    }, 300)
     return () => clearTimeout(timerRef.current)
   }, [query])
 
@@ -64,14 +94,18 @@ export default function SearchView({ onBack, onStoreSelect }) {
         .from('products')
         .select('upc, name, image_url, normalized_category, category')
         .ilike('name', `%${q}%`)
-        .limit(10),
+        .order('name', { ascending: true })
+        .order('upc', { ascending: true })
+        .range(0, PAGE_SIZE - 1),
       supabase
         .from('flipp_observations')
         .select('product_name, store_id, price, regular_price, promo_description, clean_image_url, post_price_text, valid_to, merchant_name')
         .ilike('product_name', `%${q}%`)
         .gt('price', 0)
         .or(`valid_to.is.null,valid_to.gte.${today}`)
-        .limit(10),
+        .order('price', { ascending: true })
+        .order('product_name', { ascending: true })
+        .range(0, PAGE_SIZE - 1),
       supabase
         .from('stores')
         .select('id, name, location, city, color')
@@ -105,20 +139,106 @@ export default function SearchView({ onBack, onStoreSelect }) {
       }))
     }
 
-    setProducts(enriched)
-    const seen = new Map()
+    if (currentQueryRef.current !== q) return
+
+    flippSeenRef.current = new Map()
     for (const item of (flippData || [])) {
       const key = `${item.product_name}|${item.merchant_name}`
-      const existing = seen.get(key)
+      const existing = flippSeenRef.current.get(key)
       if (!existing || item.price < existing.price) {
-        seen.set(key, item)
+        flippSeenRef.current.set(key, item)
       }
     }
-    const deduped = [...seen.values()]
-    setDeals(deduped)
+
+    setProducts(enriched)
+    setDeals([...flippSeenRef.current.values()])
     setStoreResults(storeData || [])
+    setHasMoreCommunity((prodData || []).length === PAGE_SIZE)
+    setHasMoreDeals((flippData || []).length === PAGE_SIZE)
+    setCommunityOffset(PAGE_SIZE)
+    setDealsOffset(PAGE_SIZE)
     setLoading(false)
     setSearched(true)
+  }
+
+  async function loadMoreCommunity() {
+    const q = query.trim()
+    setLoadingMoreCommunity(true)
+    const { data: prodData } = await supabase
+      .from('products')
+      .select('upc, name, image_url, normalized_category, category')
+      .ilike('name', `%${q}%`)
+      .order('name', { ascending: true })
+      .order('upc', { ascending: true })
+      .range(communityOffset, communityOffset + PAGE_SIZE - 1)
+
+    let enriched = prodData || []
+    if (enriched.length > 0) {
+      const upcs = enriched.map(p => String(p.upc))
+      const { data: obs } = await supabase
+        .from('observations')
+        .select('barcode, price, store_id, created_at')
+        .in('barcode', upcs)
+        .gt('price', 0)
+        .lte('price', 500)
+        .order('created_at', { ascending: false })
+
+      const latestByUpc = {}
+      for (const o of obs || []) {
+        if (!(o.barcode in latestByUpc)) {
+          latestByUpc[o.barcode] = { price: o.price, store_id: o.store_id, created_at: o.created_at }
+        }
+      }
+      enriched = enriched.map(p => ({
+        ...p,
+        latestPrice: latestByUpc[String(p.upc)]?.price ?? null,
+        latestStoreId: latestByUpc[String(p.upc)]?.store_id ?? null,
+        latestCreatedAt: latestByUpc[String(p.upc)]?.created_at ?? null,
+      }))
+    }
+
+    if (currentQueryRef.current !== q) {
+      setLoadingMoreCommunity(false)
+      return
+    }
+
+    setProducts(prev => [...prev, ...enriched])
+    setHasMoreCommunity(enriched.length === PAGE_SIZE)
+    setCommunityOffset(prev => prev + PAGE_SIZE)
+    setLoadingMoreCommunity(false)
+  }
+
+  async function loadMoreDeals() {
+    const q = query.trim()
+    const today = new Date().toISOString().split('T')[0]
+    setLoadingMoreDeals(true)
+    const { data: flippData } = await supabase
+      .from('flipp_observations')
+      .select('product_name, store_id, price, regular_price, promo_description, clean_image_url, post_price_text, valid_to, merchant_name')
+      .ilike('product_name', `%${q}%`)
+      .gt('price', 0)
+      .or(`valid_to.is.null,valid_to.gte.${today}`)
+      .order('price', { ascending: true })
+      .order('product_name', { ascending: true })
+      .range(dealsOffset, dealsOffset + PAGE_SIZE - 1)
+
+    if (currentQueryRef.current !== q) {
+      setLoadingMoreDeals(false)
+      return
+    }
+
+    for (const item of (flippData || [])) {
+      const key = `${item.product_name}|${item.merchant_name}`
+      const existing = flippSeenRef.current.get(key)
+      if (!existing || item.price < existing.price) {
+        flippSeenRef.current.set(key, item)
+      }
+    }
+
+    setDeals([...flippSeenRef.current.values()])
+    setHasMoreDeals((flippData || []).length === PAGE_SIZE)
+    setDealsOffset(prev => prev + PAGE_SIZE)
+    setLoadingMoreDeals(false)
   }
 
   const q = query.trim()
@@ -224,6 +344,12 @@ export default function SearchView({ onBack, onStoreSelect }) {
                   )
                 })}
               </div>
+              {loadingMoreCommunity && <p className="search-status" style={{ marginTop: 8 }}>Loading more…</p>}
+              {hasMoreCommunity && !loadingMoreCommunity && (
+                <button className="load-more-btn" onClick={loadMoreCommunity}>
+                  See more community prices
+                </button>
+              )}
             </div>
           )}
 
@@ -253,6 +379,12 @@ export default function SearchView({ onBack, onStoreSelect }) {
                   </div>
                 ))}
               </div>
+              {loadingMoreDeals && <p className="search-status" style={{ marginTop: 8 }}>Loading more…</p>}
+              {hasMoreDeals && !loadingMoreDeals && (
+                <button className="load-more-btn" onClick={loadMoreDeals}>
+                  Load more deals
+                </button>
+              )}
             </div>
           )}
         </div>
