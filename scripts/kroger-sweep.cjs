@@ -4,13 +4,17 @@
 const { createClient } = require('@supabase/supabase-js');
 
 // ─── CONFIG ────────────────────────────────────────────────
+const ws = require('ws')
+
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_SECRET_KEY
-);
+  process.env.SUPABASE_SECRET_KEY,
+  { realtime: { transport: ws } }
+)
 
-const KROGER_CLIENT_ID     = process.env.KROGER_CLIENT_ID;
-const KROGER_CLIENT_SECRET = process.env.KROGER_CLIENT_SECRET;
+const KROGER_CLIENT_ID     = process.env.KROGER_CLIENT_ID
+const KROGER_CLIENT_SECRET = process.env.KROGER_CLIENT_SECRET
+
 const KROGER_API           = 'https://api.kroger.com/v1';
 
 // IE zip codes to search for stores
