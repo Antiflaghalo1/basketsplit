@@ -92,6 +92,7 @@ export default function CategoriesView({ onBack, userId, savedUpcs = new Set(), 
   const [departmentBrowse, setDepartmentBrowse] = useState(null);
   const [drillData, setDrillData] = useState(null);
   const [browseLoading, setBrowseLoading] = useState(false);
+  const [untaggedVisible, setUntaggedVisible] = useState(25);
 
   const allStores = [...stores, ...getCustomStores()]
 
@@ -127,6 +128,7 @@ export default function CategoriesView({ onBack, userId, savedUpcs = new Set(), 
     setDrillData(null);
     setUntaggedItems([]);
     setBrowseLoading(false);
+    setUntaggedVisible(25);
     if (typeof setExpanded === 'function') setExpanded(null);
   }, [resetKey]);
 
@@ -158,11 +160,6 @@ export default function CategoriesView({ onBack, userId, savedUpcs = new Set(), 
       } else {
         const b = await fetchDepartmentBrowse(selectedDept.normalizedCategory);
         if (!cancelled) setDepartmentBrowse(b);
-        if (!cancelled && b.subcategories.length === 0 && b.untaggedCount > 0) {
-          const u = await fetchUntaggedItems(selectedDept.normalizedCategory);
-          if (!cancelled) setUntaggedItems(u || []);
-          if (!cancelled) setBrowsingUntagged(true);
-        }
       }
 
       if (!cancelled) setBrowseLoading(false);
@@ -211,6 +208,7 @@ export default function CategoriesView({ onBack, userId, savedUpcs = new Set(), 
   function handleUntaggedTileClick() {
     setBrowsingUntagged(true);
     setUntaggedItems([]);
+    setUntaggedVisible(25);
   }
 
   function handleAttributeValueClick(dimensionKey, value) {
@@ -509,7 +507,7 @@ export default function CategoriesView({ onBack, userId, savedUpcs = new Set(), 
           {!browseLoading && untaggedItems.length === 0 && (
             <div className="drill-empty">No untagged items.</div>
           )}
-          {!browseLoading && untaggedItems.map(item => (
+          {!browseLoading && untaggedItems.slice(0, untaggedVisible).map(item => (
             <div key={item.upc} className="untagged-card">
               <div className="untagged-thumb">
                 {item.imageUrl ? (
@@ -552,6 +550,14 @@ export default function CategoriesView({ onBack, userId, savedUpcs = new Set(), 
               </div>
             </div>
           ))}
+          {!browseLoading && untaggedItems.length > untaggedVisible && (
+            <button
+              className="load-more-btn"
+              onClick={() => setUntaggedVisible(v => v + 25)}
+            >
+              Load More ({untaggedItems.length - untaggedVisible} remaining)
+            </button>
+          )}
         </>
       )}
 
