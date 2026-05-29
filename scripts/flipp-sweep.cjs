@@ -13,8 +13,24 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SECRET_KEY, {
   realtime: { transport: ws }
 })
 
-const ZIP_CODES = ['91710', '91709', '91761']
+// ─── CONFIG ────────────────────────────────────────────────
+const POSTAL_CODE = '91710' // Single zip — Flipp search returns regional results
 
+const SEARCH_TERMS = [
+  'eggs', 'milk', 'butter', 'cheese', 'yogurt', 'cream',
+  'chicken', 'ground beef', 'beef', 'pork', 'salmon', 'shrimp',
+  'bacon', 'sausage', 'hot dogs', 'turkey',
+  'bread', 'tortillas', 'rice', 'pasta', 'cereal', 'oatmeal',
+  'olive oil', 'cooking oil', 'sugar', 'flour',
+  'canned beans', 'canned tomatoes', 'soup',
+  'orange juice', 'water', 'coffee',
+  'potatoes', 'onions', 'apples', 'bananas', 'avocado',
+  'snacks', 'chips',
+  'laundry detergent', 'paper towels', 'toilet paper', 'trash bags',
+  'diapers', 'dish soap',
+]
+
+// Merchant name → Supabase store IDs
 const STORE_MAP = {
   'walmart':                ['walmart_chino', 'walmart_ontario'],
   'stater bros':            ['staters_chino_schaefer_ave', 'staters_chino_riverside_dr', 'staters_chino_pine_ave', 'staters_chinohills', 'staters_ontario_ontario_ranch_rd', 'staters_ontario_4th_st', 'staters_ontario_philadelphia_st', 'staters_ontario_holt_blvd', 'staters_ontario_haven_ave'],
@@ -42,45 +58,21 @@ const STORE_MAP = {
   '99 ranch market':        ['99ranch_chino', '99ranch_chinohills'],
 }
 
-function generateSid() {
-  return Array.from({ length: 16 }, () => Math.floor(Math.random() * 10)).join('')
-}
+const DELAY_MS = 800
+const CHUNK    = 500
+const sleep = ms => new Promise(r => setTimeout(r, ms))
 
-async function getFlyers(zip) {
-  const sid = generateSid()
-  const url = `https://flyers-ng.flippback.com/api/flipp/data?locale=en&postal_code=${zip}&sid=${sid}`
-  const res = await fetch(url, {
-    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; BasketSplitBot/1.0)' }
-  })
-  if (!res.ok) throw new Error(`Flipp flyers fetch failed: ${res.status}`)
-  return res.json()
-}
-
-async function getFlyerItems(flyerId) {
-  const sid = generateSid()
-  const url = `https://flyers-ng.flippback.com/api/flipp/flyers/${flyerId}/flyer_items?locale=en&sid=${sid}`
-  const res = await fetch(url, {
-    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; BasketSplitBot/1.0)' }
-  })
-  if (!res.ok) throw new Error(`Flipp items fetch failed for flyer ${flyerId}: ${res.status}`)
-  return res.json()
-}
-
+// ─── HELPERS ───────────────────────────────────────────────
 function resolveStoreIds(merchantName) {
-  return STORE_MAP[merchantName.toLowerCase().trim()] || []
+  return STORE_MAP[merchantName?.toLowerCase().trim()] || []
 }
 
-function parsePrice(priceStr) {
-  if (!priceStr) return null
-  const match = String(priceStr).match(/[\d.]+/)
-  if (!match) return null
-  const price = parseFloat(match[0])
-  return isNaN(price) || price <= 0 || price > 500 ? null : price
+function parsePrice(val) {
+  if (val == null) return null
+  const n = parseFloat(val)
+  return isNaN(n) || n <= 0 || n > 500 ? null : n
 }
 
-// ─── PROMO PARSING ────────────────────────────────────────
-// Extracts min qty from strings like:
-// "When you buy 2", "2 for $1.98", "Buy 2 get 1 free", "must buy 3"
 function parseMinQty(text) {
   if (!text) return null
   const match = text.match(/\b(\d+)\b/)
@@ -89,120 +81,111 @@ function parseMinQty(text) {
   return qty > 1 && qty <= 20 ? qty : null
 }
 
-// Builds a clean human-readable promo string from available fields
-function buildPromoDescription(item) {
-  const parts = []
-  if (item.pre_price_text)  parts.push(item.pre_price_text.trim())
-  if (item.sale_story)      parts.push(item.sale_story.trim())
-  if (item.disclaimer)      parts.push(item.disclaimer.trim())
-  if (item.description && item.description !== item.name) parts.push(item.description.trim())
-  // Deduplicate and join
-  return [...new Set(parts)].join(' · ') || null
+function parseDate(str) {
+  if (!str) return null
+  return str.split('T')[0] // "2026-05-27T04:00:00+00:00" → "2026-05-27"
 }
 
-async function main() {
-  console.log('Squrry Flipp Sweep starting...')
-  console.log('Zip codes: ' + ZIP_CODES.join(', '))
+// ─── FLIPP SEARCH API ──────────────────────────────────────
+async function searchFlippItems(query) {
+  const url = `https://cdn-gateflipp.flippback.com/bf/flipp/items/search?locale=en-us&postal_code=${POSTAL_CODE}&sid=&q=${encodeURIComponent(query)}`
+  try {
+    const res = await fetch(url, {
+      headers: {
+        'accept':          '*/*',
+        'origin':          'https://flipp.com',
+        'referer':         'https://flipp.com/',
+        'user-agent':      'Mozilla/5.0 (X11; CrOS x86_64 14541.0.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36',
+        'accept-language': 'en-US,en;q=0.9',
+        'dnt':             '1',
+      }
+    })
+    if (!res.ok) {
+      console.warn(`[flipp-sweep] HTTP ${res.status} for "${query}"`)
+      return []
+    }
+    const data = await res.json()
+    // Only return flyer items — skip ecom_items (JCPenney etc)
+    return (data?.items || []).filter(i => i.item_type === 'flyer')
+  } catch (err) {
+    console.warn(`[flipp-sweep] Fetch error for "${query}": ${err.message}`)
+    return []
+  }
+}
 
-  const seen     = new Set()
+// ─── MAIN ──────────────────────────────────────────────────
+async function main() {
+  console.log('[flipp-sweep] ════════════════════════════════')
+  console.log(`[flipp-sweep] Starting — ${new Date().toISOString()}`)
+  console.log(`[flipp-sweep] Terms: ${SEARCH_TERMS.length}`)
+  console.log('[flipp-sweep] ════════════════════════════════\n')
+
+  const seen     = new Set() // dedupe by flyer_item_id + store_id
   const toInsert = []
 
-  for (const zip of ZIP_CODES) {
-    console.log('\nFetching flyers for ' + zip + '...')
-    let flyerData
-    try {
-      flyerData = await getFlyers(zip)
-    } catch (err) {
-      console.warn('Could not fetch flyers for ' + zip + ': ' + err.message)
-      continue
+  for (const term of SEARCH_TERMS) {
+    await sleep(DELAY_MS)
+
+    const items = await searchFlippItems(term)
+    let termCount = 0
+
+    for (const item of items) {
+      const storeIds = resolveStoreIds(item.merchant_name)
+      if (!storeIds.length) continue
+
+      const price = parsePrice(item.current_price)
+      const name  = item.name?.trim()
+      if (!name || price === null) continue
+
+      for (const store_id of storeIds) {
+        const dedupKey = `${item.flyer_item_id}_${store_id}`
+        if (seen.has(dedupKey)) continue
+        seen.add(dedupKey)
+
+        toInsert.push({
+          // core
+          barcode:          item.sku || null,
+          product_name:     name,
+          store_id,
+          price,
+          source:           'flipp',
+          // dates
+          valid_from:       parseDate(item.valid_from),
+          valid_to:         parseDate(item.valid_to),
+          // promo
+          regular_price:    parsePrice(item.original_price),
+          promo_description: item.sale_story   || null,
+          pre_price_text:   item.pre_price_text || null,
+          post_price_text:  item.post_price_text || null,
+          promo_min_qty:    parseMinQty(item.sale_story || item.pre_price_text),
+          // merchant + flyer
+          merchant_name:    item.merchant_name  || null,
+          flyer_id:         item.flyer_id        || null,
+          flyer_item_id:    item.flyer_item_id   || null,
+          // category
+          category_l1:      item._L1             || null,
+          category_l2:      item._L2             || null,
+          // image
+          clean_image_url:  item.clean_image_url || null,
+          // legacy fields
+          unit:             null,
+          sale_type:        item.item_type        || null,
+        })
+        termCount++
+      }
     }
 
-    const flyers = flyerData?.flyers || []
-    console.log('Found ' + flyers.length + ' total flyers')
-
-    const relevantFlyers = flyers.filter(f => resolveStoreIds(f.merchant).length > 0)
-    console.log(relevantFlyers.length + ' match our store list')
-
-    for (const flyer of relevantFlyers) {
-      const storeIds = resolveStoreIds(flyer.merchant)
-      const flyerId  = flyer.id
-
-      if (seen.has(flyerId)) {
-        console.log('Skipping duplicate flyer: ' + flyer.merchant)
-        continue
-      }
-      seen.add(flyerId)
-
-      console.log('Processing ' + flyer.merchant + ' -> ' + storeIds.join(', '))
-
-      let items
-      try {
-        await new Promise(r => setTimeout(r, 500))
-        items = await getFlyerItems(flyerId)
-      } catch (err) {
-        console.warn('Could not fetch items for ' + flyer.merchant + ': ' + err.message)
-        continue
-      }
-
-      // Log raw fields from first item so we can see what Flipp returns
-      if (items.length > 0) {
-        console.log('[flipp-sweep] Sample item keys:', Object.keys(items[0]).join(', '))
-      }
-
-      let itemCount = 0
-
-      for (const item of items) {
-        const price = parsePrice(item.current_price || item.price)
-        const name  = item.name?.trim()
-        if (!name || price === null) continue
-
-        // Regular price — what it costs without the promo
-        const regularPrice = parsePrice(
-          item.original_price ||
-          item.was_price      ||
-          item.regular_price  ||
-          item.cutoff_price   ||
-          null
-        )
-
-        // Promo description — surfaces "when you buy 2" etc
-        const promoDescription = buildPromoDescription(item)
-
-        // Min quantity required to get the promo price
-        const promoMinQty = parseMinQty(item.pre_price_text || item.sale_story || null)
-
-        for (const store_id of storeIds) {
-          toInsert.push({
-            barcode:          item.sku || null,
-            product_name:     name,
-            store_id,
-            price,
-            unit:             item.unit_price_value  || null,
-            sale_type:        item.sale_story        || null,
-            valid_from:       item.valid_from || flyer.valid_from || null,
-            valid_to:         item.valid_to   || flyer.valid_to   || null,
-            source:           'flipp',
-            // ── new promo fields ──
-            regular_price:    regularPrice    || null,
-            promo_min_qty:    promoMinQty     || null,
-            promo_description: promoDescription || null,
-          })
-        }
-        itemCount++
-      }
-
-      console.log(itemCount + ' valid items')
-    }
+    console.log(`[flipp-sweep]   "${term}" → ${termCount} items`)
   }
 
   if (toInsert.length === 0) {
-    console.log('No items to insert.')
+    console.log('[flipp-sweep] No items to insert.')
     return
   }
 
-  console.log('\nWriting ' + toInsert.length + ' items to flipp_observations...')
+  console.log(`\n[flipp-sweep] Writing ${toInsert.length} items to flipp_observations...`)
 
-  // Clear stale records (past valid_to date)
+  // Clear stale records
   const today = new Date().toISOString().split('T')[0]
   const { error: deleteError } = await supabase
     .from('flipp_observations')
@@ -210,29 +193,30 @@ async function main() {
     .lt('valid_to', today)
 
   if (deleteError) {
-    console.warn('Could not clear stale records:', deleteError.message)
+    console.warn('[flipp-sweep] Could not clear stale records:', deleteError.message)
   } else {
-    console.log('Stale records cleared')
+    console.log('[flipp-sweep] Stale records cleared')
   }
 
-  // Insert in chunks of 500
-  const CHUNK  = 500
+  // Insert in chunks
   let inserted = 0
-
   for (let i = 0; i < toInsert.length; i += CHUNK) {
-    const chunk      = toInsert.slice(i, i + CHUNK)
-    const { error }  = await supabase.from('flipp_observations').insert(chunk)
+    const chunk     = toInsert.slice(i, i + CHUNK)
+    const { error } = await supabase.from('flipp_observations').insert(chunk)
     if (error) {
-      console.error('Batch insert error:', error.message)
+      console.error('[flipp-sweep] Batch insert error:', error.message)
     } else {
       inserted += chunk.length
     }
   }
 
-  console.log('Sweep complete — ' + inserted + ' items written to flipp_observations')
+  console.log('\n[flipp-sweep] ════════════════════════════════')
+  console.log(`[flipp-sweep] Complete — ${new Date().toISOString()}`)
+  console.log(`[flipp-sweep]   Items written: ${inserted}`)
+  console.log('[flipp-sweep] ════════════════════════════════\n')
 }
 
 main().catch(err => {
-  console.error('Scraper crashed:', err)
+  console.error('[flipp-sweep] FATAL:', err)
   process.exit(1)
 })
