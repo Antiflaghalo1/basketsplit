@@ -10,7 +10,7 @@ const REASONS = [
   'Other',
 ]
 
-export default function ReportModal({ targetId, targetName, userId, onClose }) {
+export default function ReportModal({ targetId, targetName, userId, onClose, onSuccess }) {
   const [reason, setReason] = useState('')
   const [details, setDetails] = useState('')
   const [submitted, setSubmitted] = useState(false)
@@ -22,7 +22,7 @@ export default function ReportModal({ targetId, targetName, userId, onClose }) {
     await reportFlag({ type: 'product', targetId, targetName, reason, details, userId })
     setSubmitting(false)
     setSubmitted(true)
-    setTimeout(onClose, 1800)
+    setTimeout(onSuccess ?? onClose, 1800)
   }
 
   return (

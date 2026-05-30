@@ -1310,6 +1310,7 @@ export default function ScanView({ onBack, user }) {
               targetName={productName}
               userId={user?.id}
               onClose={() => setShowReportModal(false)}
+              onSuccess={onBack}
             />
           )}
         </div>
