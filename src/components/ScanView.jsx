@@ -1040,7 +1040,14 @@ export default function ScanView({ onBack, user }) {
               />
               {productInfoLocked && (
                 <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>
-                  We have this item — just update the price.
+                  Looks right? Just add today's price.{' '}
+                  <button
+                    type="button"
+                    onClick={() => setShowReportModal(true)}
+                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 12, textDecoration: 'underline', cursor: 'pointer', padding: 0 }}
+                  >
+                    Not this item?
+                  </button>
                 </p>
               )}
             </>
@@ -1296,6 +1303,15 @@ export default function ScanView({ onBack, user }) {
           >
             Save Price →
           </button>
+
+          {showReportModal && (
+            <ReportModal
+              targetId={recognizedProduct?.upc || barcode}
+              targetName={productName}
+              userId={user?.id}
+              onClose={() => setShowReportModal(false)}
+            />
+          )}
         </div>
       )}
 

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { reportFlag } from '../data/flags'
 
 const REASONS = [
+  'Wrong item',
   'Wrong name',
   'Wrong price',
   'Wrong category',
