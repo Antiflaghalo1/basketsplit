@@ -54,6 +54,20 @@ function timeAgo(ts) {
   return `${days}d ago`
 }
 
+function getBarcodeCandidates(code) {
+  const s = String(code).trim()
+  const candidates = new Set()
+  candidates.add(String(code))
+  candidates.add(s)
+  if (s.startsWith('0')) candidates.add(s.slice(1))
+  if (s.length === 12) candidates.add('0' + s)
+  if (s.length === 11) {
+    candidates.add('0' + s)
+    candidates.add('00' + s)
+  }
+  return [...candidates]
+}
+
 export default function ScanView({ onBack, user }) {
   const oldStore = localStorage.getItem('basketsplit_last_store')
   if (oldStore) {
@@ -317,20 +331,26 @@ export default function ScanView({ onBack, user }) {
   }, [])
 
   async function fetchExistingPrices(code) {
-    if (!WEBHOOK_URL) return
     setPricesLoading(true)
+    const candidates = getBarcodeCandidates(code)
     try {
-      const res = await fetch(WEBHOOK_URL)
-      const data = await res.json()
-      const matches = data
-        .filter(row =>
-          String(row.barcode) === String(code) &&
-          Number(row.price) > 0 &&
-          Number(row.price) <= 200
-        )
-        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-        .slice(0, 3)
-      setExistingPrices(matches)
+      const { data } = await supabase
+        .from('observations')
+        .select('barcode, store_id, price, created_at')
+        .in('barcode', candidates)
+        .eq('voided', false)
+        .gt('price', 0)
+        .lte('price', 500)
+        .order('created_at', { ascending: false })
+        .limit(3)
+      setExistingPrices(
+        (data || []).map(row => ({
+          barcode: row.barcode,
+          storeId: row.store_id,
+          price: row.price,
+          timestamp: row.created_at,
+        }))
+      )
     } catch {
       setExistingPrices([])
     }
@@ -340,7 +360,8 @@ export default function ScanView({ onBack, user }) {
   function getCachedProduct(upc) {
     try {
       const cache = JSON.parse(localStorage.getItem('squrry_product_cache') || '[]')
-      return cache.find(p => String(p.upc) === String(upc)) || null
+      const candidates = new Set(getBarcodeCandidates(upc))
+      return cache.find(p => candidates.has(String(p.upc))) || null
     } catch { return null }
   }
 
@@ -357,26 +378,38 @@ export default function ScanView({ onBack, user }) {
   async function runFullLookupWaterfall(code) {
     setLookingUp(true)
 
-    const { data: dbProduct } = await supabase
+    const candidates = getBarcodeCandidates(code)
+    const { data: dbProducts } = await supabase
       .from('products')
-      .select('name, brand, category, normalized_category, quantity, image_url, subcategory, attributes')
-      .eq('upc', code)
-      .maybeSingle()
+      .select('upc, name, brand, category, normalized_category, quantity, image_url, subcategory, variant, size_grade, package, attributes, name_source')
+      .in('upc', candidates)
+      .limit(1)
+
+    const dbProduct = dbProducts?.[0] ?? null
 
     if (dbProduct?.name) {
+      const matchedUpc = dbProduct.upc || code
       setProductName(dbProduct.name)
       setProductBrand(dbProduct.brand || '')
       setProductCategory(dbProduct.category || '')
       setProductQuantity(dbProduct.quantity || '')
       setProductImageUrl(dbProduct.image_url || '')
-      setRecognizedProduct({ image_url: dbProduct.image_url || '', normalized_category: dbProduct.normalized_category || '', subcategory: dbProduct.subcategory || null, attributes: dbProduct.attributes || null, upc: code })
+      setRecognizedProduct({
+        image_url: dbProduct.image_url || '',
+        normalized_category: dbProduct.normalized_category || '',
+        subcategory: dbProduct.subcategory || null,
+        attributes: dbProduct.attributes || null,
+        upc: matchedUpc,
+        name_source: dbProduct.name_source || null,
+        source: 'squrry',
+      })
       setApiLookupStatus('found')
+      setLookingUp(false)
       supabase.from('observations').select('store_id, price, created_at')
-        .eq('barcode', code).eq('voided', false)
+        .in('barcode', candidates).eq('voided', false)
         .order('created_at', { ascending: false }).limit(1).maybeSingle()
         .then(({ data }) => { if (data) setLastObservation(data) })
         .catch(() => {})
-      setLookingUp(false)
       return
     }
 
@@ -781,6 +814,13 @@ export default function ScanView({ onBack, user }) {
                 {recognizedProduct.normalized_category && (
                   <div style={{ color: 'var(--text-muted)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{recognizedProduct.normalized_category}</div>
                 )}
+                <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 2 }}>
+                  {lastObservation
+                    ? 'Community price found'
+                    : recognizedProduct.name_source
+                    ? 'Squrry fetched'
+                    : 'Squrry found this'}
+                </div>
                 {lastObservation && (
                   <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>
                     Last seen: ${parseFloat(lastObservation.price).toFixed(2)} at {allStores.find(s => s.id === lastObservation.store_id)?.name || lastObservation.store_id} · {timeAgo(lastObservation.created_at)}
